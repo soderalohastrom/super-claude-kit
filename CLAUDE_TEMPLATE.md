@@ -1,10 +1,10 @@
-# SUPER CLAUDE Integration
+# Super Claude Kit Integration
 
-This project uses **SUPER CLAUDE** - a persistent context memory system for Claude Code that enables cross-message and cross-session memory.
+This project uses **Super Claude Kit** - a persistent context memory system for Claude Code that enables cross-message and cross-session memory.
 
 ## 🎯 System Overview
 
-SUPER CLAUDE provides:
+Super Claude Kit provides:
 - **Persistent Context**: Remember files accessed, tasks worked on, and discoveries made
 - **Smart Refresh**: Automatic context updates before each prompt
 - **Cross-Session Memory**: Context persists across sessions (24-hour window)
@@ -70,7 +70,7 @@ These run automatically via `.claude/settings.local.json`:
 
 ## 📊 Verification
 
-Check if SUPER CLAUDE is working:
+Check if Super Claude Kit is working:
 
 ```bash
 # View current stats

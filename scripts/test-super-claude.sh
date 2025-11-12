@@ -1,11 +1,11 @@
 #!/bin/bash
-# SUPER CLAUDE Installation Test Script
-# Verifies that SUPER CLAUDE is installed and working correctly
+# Super Claude Kit Installation Test Script
+# Verifies that Super Claude Kit is installed and working correctly
 
 set -euo pipefail
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "🧪 Testing SUPER CLAUDE Installation"
+echo "🧪 Testing Super Claude Kit Installation"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
@@ -146,11 +146,11 @@ echo ""
 # Test 6: Check gitignore
 echo "6️⃣ Checking .gitignore..."
 if [ -f ".gitignore" ]; then
-  if grep -q "SUPER CLAUDE" .gitignore 2>/dev/null; then
-    echo "   ✅ .gitignore updated with SUPER CLAUDE entries"
+  if grep -q "Super Claude Kit" .gitignore 2>/dev/null; then
+    echo "   ✅ .gitignore updated with Super Claude Kit entries"
     PASSED=$((PASSED + 1))
   else
-    echo "   ⚠️  .gitignore exists but no SUPER CLAUDE entries"
+    echo "   ⚠️  .gitignore exists but no Super Claude Kit entries"
   fi
 else
   echo "   ⚠️  .gitignore not found"
@@ -169,11 +169,11 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 if [ "$FAILED" -eq 0 ]; then
-  echo "✅ SUPER CLAUDE is installed correctly!"
+  echo "✅ Super Claude Kit is installed correctly!"
   echo ""
   echo "🚀 Next steps:"
   echo "   1. Start Claude Code in this directory"
-  echo "   2. Look for: '🚀 SUPER CLAUDE ACTIVATED'"
+  echo "   2. Look for: '🚀 Super Claude Kit ACTIVATED'"
   echo "   3. Check capsule displays before each prompt"
   echo ""
   echo "📊 View statistics: bash .claude/hooks/show-stats.sh"

@@ -1,4 +1,4 @@
-# SUPER CLAUDE
+# Super Claude Kit
 
 **Transform Claude Code from a stateless tourist into a stateful resident.**
 
@@ -15,7 +15,7 @@ You're the tour guide, and Claude is the tourist who keeps asking for directions
 
 ## The Solution
 
-**SUPER CLAUDE** adds persistent memory to Claude Code using:
+**Super Claude Kit** adds persistent memory to Claude Code using:
 
 - ✅ **Session state tracking** - Remembers files, tasks, discoveries
 - ✅ **Cross-session persistence** - 24-hour memory window
@@ -25,7 +25,7 @@ You're the tour guide, and Claude is the tourist who keeps asking for directions
 
 **No external dependencies. No databases. Pure bash + hooks.**
 
-**⭐ If SUPER CLAUDE helps you, please star the repo!**
+**⭐ If Super Claude Kit helps you, please star the repo!**
 
 ---
 
@@ -93,7 +93,7 @@ Previous session: 15m on branch main
 
 ### 🤖 Specialized Sub-Agents
 
-SUPER CLAUDE includes 4 built-in sub-agents for common development tasks:
+Super Claude Kit includes 4 built-in sub-agents for common development tasks:
 
 1. **architecture-explorer** - Understand codebases, service boundaries, data flows
 2. **database-navigator** - Explore database schemas, migrations, relationships
@@ -124,7 +124,7 @@ curl -sL https://raw.githubusercontent.com/arpitnath/super-claude/main/install |
 **That's it.** Next time you start Claude Code:
 
 ```
-🚀 SUPER CLAUDE ACTIVATED - Context Loaded
+🚀 Super Claude Kit ACTIVATED - Context Loaded
 ```
 
 ### What Gets Installed

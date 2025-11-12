@@ -238,7 +238,7 @@ gh issue create \
   --label "refactor,technical-debt,priority:low"
 ```
 
-## Integration with SUPER CLAUDE
+## Integration with Super Claude Kit
 
 When creating issues, log them as discoveries:
 ```bash

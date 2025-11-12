@@ -1,17 +1,17 @@
 #!/bin/bash
-# SUPER CLAUDE Stats Dashboard
+# Super Claude Kit Stats Dashboard
 # Shows usage statistics for the current session
 
 set -euo pipefail
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "📊 SUPER CLAUDE Usage Statistics"
+echo "📊 Super Claude Kit Usage Statistics"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
 # Check if .claude directory exists
 if [ ! -d ".claude" ]; then
-  echo "⚠️  SUPER CLAUDE not initialized in this directory"
+  echo "⚠️  Super Claude Kit not initialized in this directory"
   exit 0
 fi
 

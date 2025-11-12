@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# SUPER CLAUDE Session Start Hook
+# Super Claude Kit Session Start Hook
 # Runs at session start to load context and restore memory
 
 # Persist previous session (if any) before starting new one
@@ -12,7 +12,7 @@ fi
 ./.claude/hooks/init-capsule-session.sh 2>/dev/null
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "🚀 SUPER CLAUDE ACTIVATED - Context Loaded"
+echo "🚀 Super Claude Kit ACTIVATED - Context Loaded"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
@@ -44,9 +44,9 @@ echo "🌿 Active Work:"
 echo "   ✅ On $BRANCH"
 echo ""
 
-# 4. Load Exploration Journal (SUPER CLAUDE MEMORY)
+# 4. Load Exploration Journal (Super Claude Kit MEMORY)
 if [ -d "docs/exploration" ] && [ "$(ls -A docs/exploration 2>/dev/null)" ]; then
-    echo "🧠 SUPER CLAUDE MEMORY LOADED:"
+    echo "🧠 Super Claude Kit MEMORY LOADED:"
     echo "   Previous exploration findings available:"
     for file in docs/exploration/*.md; do
         if [ -f "$file" ]; then
@@ -73,11 +73,11 @@ fi
 if [ -f "README.md" ]; then
     echo "   • Documentation: README.md"
 fi
-echo "   • SUPER CLAUDE docs: .claude/docs/"
+echo "   • Super Claude Kit docs: .claude/docs/"
 echo ""
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "✅ Context loaded successfully! You are now SUPER CLAUDE."
+echo "✅ Context loaded successfully! You are now Super Claude Kit."
 echo "💡 Tip: All discoveries are persistent across this session."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""

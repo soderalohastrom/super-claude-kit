@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
   "author": "Arpit Nath",
-  "description": "SUPER CLAUDE - Persistent Context Memory System for Claude Code",
+  "description": "Super Claude Kit - Persistent Context Memory System for Claude Code",
   "components": {
     "hooks": [
       "check-refresh-needed.sh",
@@ -49,7 +49,7 @@
     ]
   },
   "gitignore_entries": [
-    "# SUPER CLAUDE session files (generated at runtime)",
+    "# Super Claude Kit session files (generated at runtime)",
     ".claude/capsule.toon",
     ".claude/capsule_persist.json",
     ".claude/capsule.hash",
