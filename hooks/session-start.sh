@@ -1,0 +1,86 @@
+#!/bin/bash
+
+# SUPER CLAUDE Session Start Hook
+# Runs at session start to load context and restore memory
+
+# Persist previous session (if any) before starting new one
+if [ -f ".claude/session_start.txt" ]; then
+  ./.claude/hooks/persist-capsule.sh 2>/dev/null
+fi
+
+# Initialize Context Capsule session tracking
+./.claude/hooks/init-capsule-session.sh 2>/dev/null
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🚀 SUPER CLAUDE ACTIVATED - Context Loaded"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+# Restore context from previous session (if recent)
+./.claude/hooks/restore-capsule.sh 2>/dev/null
+
+# Load recent discoveries from exploration journal
+./.claude/hooks/load-from-journal.sh 2>/dev/null
+
+# 1. Show current git status
+echo "📊 Current Work Context:"
+BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
+echo "   Branch: $BRANCH"
+git status -sb 2>/dev/null | head -5 || echo "   Not in git repo"
+echo ""
+
+# 2. Detect recent changes (last 24 hours)
+echo "🔄 Recent Changes (last 24h):"
+RECENT_COMMITS=$(git log --oneline --since="24 hours ago" --no-merges 2>/dev/null)
+if [ -n "$RECENT_COMMITS" ]; then
+    echo "$RECENT_COMMITS" | head -5
+else
+    echo "   No recent commits"
+fi
+echo ""
+
+# 3. Show active branches with context
+echo "🌿 Active Work:"
+echo "   ✅ On $BRANCH"
+echo ""
+
+# 4. Load Exploration Journal (SUPER CLAUDE MEMORY)
+if [ -d "docs/exploration" ] && [ "$(ls -A docs/exploration 2>/dev/null)" ]; then
+    echo "🧠 SUPER CLAUDE MEMORY LOADED:"
+    echo "   Previous exploration findings available:"
+    for file in docs/exploration/*.md; do
+        if [ -f "$file" ]; then
+            filename=$(basename "$file")
+            echo "   📄 $filename"
+        fi
+    done
+    echo "   💡 Read these files to continue where I left off"
+    echo ""
+fi
+
+# 5. Show pending TODOs from previous session (if exists)
+if [ -f ".claude/session-state.json" ]; then
+    echo "📝 Pending Tasks from Last Session:"
+    cat .claude/session-state.json 2>/dev/null | python3 -c "import sys, json; data = json.load(sys.stdin); print('\n'.join(['   • ' + task for task in data.get('pendingTasks', [])[:5]]))" 2>/dev/null || echo "   No pending tasks"
+    echo ""
+fi
+
+# 6. Quick reference
+echo "📖 Quick Reference:"
+if [ -f "CLAUDE.md" ]; then
+    echo "   • Project guide: CLAUDE.md"
+fi
+if [ -f "README.md" ]; then
+    echo "   • Documentation: README.md"
+fi
+echo "   • SUPER CLAUDE docs: .claude/docs/"
+echo ""
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "✅ Context loaded successfully! You are now SUPER CLAUDE."
+echo "💡 Tip: All discoveries are persistent across this session."
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+# Generate initial context capsule
+./.claude/hooks/update-capsule.sh 2>/dev/null

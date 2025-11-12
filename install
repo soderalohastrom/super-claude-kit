@@ -1,0 +1,239 @@
+#!/bin/bash
+# SUPER CLAUDE Installation Script
+# Works both locally (for testing) and remotely (curl | bash)
+# Author: Arpit Nath
+
+set -euo pipefail
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🚀 SUPER CLAUDE Installation"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+# Configuration
+GITHUB_REPO="arpitnath/super-claude"
+GITHUB_BRANCH="main"
+GITHUB_RAW="https://raw.githubusercontent.com/$GITHUB_REPO/$GITHUB_BRANCH"
+
+# Save current directory (where user wants to install)
+INSTALL_DIR="$(pwd)"
+
+# Get script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Detect installation mode
+INSTALL_MODE="remote"
+if [ -f "$SCRIPT_DIR/manifest.json" ] && [ -d "$SCRIPT_DIR/hooks" ]; then
+  INSTALL_MODE="local"
+  echo "📦 Local installation mode detected"
+else
+  echo "🌐 Remote installation mode (downloading from GitHub)"
+fi
+
+echo ""
+
+# Check if we're in a git repository (recommended)
+if [ ! -d "$INSTALL_DIR/.git" ]; then
+  echo "⚠️  Warning: Not in a git repository"
+  echo "   SUPER CLAUDE works best in git repositories"
+  echo ""
+  read -p "Continue anyway? (y/n) " -n 1 -r
+  echo ""
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    exit 1
+  fi
+  echo ""
+fi
+
+# Create directories
+echo "Creating .claude directories..."
+mkdir -p "$INSTALL_DIR/.claude/hooks"
+mkdir -p "$INSTALL_DIR/.claude/agents"
+mkdir -p "$INSTALL_DIR/.claude/skills"
+mkdir -p "$INSTALL_DIR/.claude/scripts"
+mkdir -p "$INSTALL_DIR/.claude/docs"
+echo "✓ Directories created"
+echo ""
+
+# Download or copy manifest
+echo "Loading manifest..."
+if [ "$INSTALL_MODE" = "local" ]; then
+  MANIFEST=$(cat "$SCRIPT_DIR/manifest.json")
+else
+  MANIFEST=$(curl -fsSL "$GITHUB_RAW/manifest.json")
+fi
+echo "✓ Manifest loaded"
+echo ""
+
+# Helper function to download or copy file
+install_file() {
+  local source_path=$1
+  local dest_path=$2
+
+  if [ "$INSTALL_MODE" = "local" ]; then
+    cp "$SCRIPT_DIR/$source_path" "$INSTALL_DIR/$dest_path"
+  else
+    curl -fsSL "$GITHUB_RAW/$source_path" -o "$INSTALL_DIR/$dest_path"
+  fi
+}
+
+# Install hooks
+echo "Installing hooks..."
+HOOK_COUNT=0
+for hook in $(echo "$MANIFEST" | python3 -c "import sys, json; [print(h) for h in json.load(sys.stdin)['components']['hooks']]"); do
+  install_file "hooks/$hook" ".claude/hooks/$hook"
+  chmod +x ".claude/hooks/$hook"
+  HOOK_COUNT=$((HOOK_COUNT + 1))
+done
+echo "✓ Installed $HOOK_COUNT hooks"
+echo ""
+
+# Install scripts
+echo "Installing utility scripts..."
+SCRIPT_COUNT=0
+for script in $(echo "$MANIFEST" | python3 -c "import sys, json; [print(s) for s in json.load(sys.stdin)['components']['scripts']]"); do
+  install_file "scripts/$script" ".claude/scripts/$script"
+  chmod +x ".claude/scripts/$script"
+  SCRIPT_COUNT=$((SCRIPT_COUNT + 1))
+done
+echo "✓ Installed $SCRIPT_COUNT utility scripts"
+echo ""
+
+# Install skills
+echo "Installing skills..."
+SKILL_COUNT=0
+for skill in $(echo "$MANIFEST" | python3 -c "import sys, json; [print(s) for s in json.load(sys.stdin)['components']['skills']]"); do
+  mkdir -p "$INSTALL_DIR/.claude/skills/$skill"
+  install_file "skills/$skill/SKILL.md" ".claude/skills/$skill/SKILL.md"
+  SKILL_COUNT=$((SKILL_COUNT + 1))
+done
+echo "✓ Installed $SKILL_COUNT skills"
+echo ""
+
+# Install agents
+echo "Installing sub-agents..."
+AGENT_COUNT=0
+for agent in $(echo "$MANIFEST" | python3 -c "import sys, json; [print(a) for a in json.load(sys.stdin)['components']['agents']]"); do
+  install_file "agents/$agent" ".claude/agents/$agent"
+  AGENT_COUNT=$((AGENT_COUNT + 1))
+done
+echo "✓ Installed $AGENT_COUNT sub-agents"
+echo ""
+
+# Install documentation
+echo "Installing documentation..."
+for doc in $(echo "$MANIFEST" | python3 -c "import sys, json; [print(d) for d in json.load(sys.stdin)['components']['docs']]"); do
+  install_file "docs/$doc" ".claude/docs/$doc"
+done
+echo "✓ Documentation installed"
+echo ""
+
+# Create or update settings.local.json
+echo "Configuring Claude Code..."
+if [ ! -f "$INSTALL_DIR/.claude/settings.local.json" ]; then
+  cat > "$INSTALL_DIR/.claude/settings.local.json" << 'EOF'
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/session-start.sh"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/pre-task-analysis.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+EOF
+  echo "✓ Created settings.local.json"
+else
+  echo "⚠️  settings.local.json exists, skipping..."
+  echo "   Manual merge may be needed for hooks configuration"
+fi
+echo ""
+
+# Update .gitignore
+echo "Updating .gitignore..."
+if [ -f "$INSTALL_DIR/.gitignore" ]; then
+  if ! grep -q "SUPER CLAUDE" "$INSTALL_DIR/.gitignore" 2>/dev/null; then
+    echo "" >> "$INSTALL_DIR/.gitignore"
+    echo "$MANIFEST" | python3 -c "import sys, json; [print(e) for e in json.load(sys.stdin)['gitignore_entries']]" >> "$INSTALL_DIR/.gitignore"
+    echo "✓ Added SUPER CLAUDE entries to .gitignore"
+  else
+    echo "✓ .gitignore already contains SUPER CLAUDE entries"
+  fi
+else
+  echo "$MANIFEST" | python3 -c "import sys, json; [print(e) for e in json.load(sys.stdin)['gitignore_entries']]" > "$INSTALL_DIR/.gitignore"
+  echo "✓ Created .gitignore with SUPER CLAUDE entries"
+fi
+echo ""
+
+# Add SUPER CLAUDE section to CLAUDE.md
+echo "Updating project instructions..."
+if [ -f "$INSTALL_DIR/CLAUDE.md" ]; then
+  if ! grep -q "SUPER CLAUDE Integration" "$INSTALL_DIR/CLAUDE.md" 2>/dev/null; then
+    echo "" >> "$INSTALL_DIR/CLAUDE.md"
+    echo "---" >> "$INSTALL_DIR/CLAUDE.md"
+    echo "" >> "$INSTALL_DIR/CLAUDE.md"
+    install_file "CLAUDE_TEMPLATE.md" "/tmp/claude_template.md"
+    cat /tmp/claude_template.md >> "$INSTALL_DIR/CLAUDE.md"
+    rm /tmp/claude_template.md
+    echo "✓ Added SUPER CLAUDE section to CLAUDE.md"
+  else
+    echo "✓ CLAUDE.md already has SUPER CLAUDE integration"
+  fi
+else
+  install_file "CLAUDE_TEMPLATE.md" "CLAUDE.md"
+  echo "✓ Created CLAUDE.md with SUPER CLAUDE instructions"
+fi
+echo ""
+
+# Initialize capsule system
+echo "Initializing capsule system..."
+cd "$INSTALL_DIR"
+bash .claude/hooks/init-capsule-session.sh >/dev/null 2>&1 || true
+bash .claude/hooks/update-capsule.sh >/dev/null 2>&1 || true
+
+if [ -f "$INSTALL_DIR/.claude/capsule.toon" ]; then
+  echo "✓ Capsule initialized successfully"
+else
+  echo "⚠️  Capsule initialization skipped (may need git repository)"
+fi
+echo ""
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "✅ SUPER CLAUDE Installed Successfully!"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "📊 Installed components:"
+echo "   • $HOOK_COUNT hooks"
+echo "   • $SCRIPT_COUNT utility scripts"
+echo "   • $SKILL_COUNT skills"
+echo "   • $AGENT_COUNT sub-agents"
+echo "   • Documentation & templates"
+echo ""
+echo "🚀 Next steps:"
+echo "   1. Run tests: bash .claude/scripts/test-super-claude.sh"
+echo "   2. Start Claude Code in this directory"
+echo "   3. Look for: '🚀 SUPER CLAUDE ACTIVATED'"
+echo ""
+echo "📖 Documentation:"
+echo "   • Usage guide: .claude/docs/CAPSULE_USAGE_GUIDE.md"
+echo "   • Project instructions: CLAUDE.md"
+echo "   • View stats: bash .claude/scripts/show-stats.sh"
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

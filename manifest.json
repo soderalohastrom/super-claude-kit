@@ -1,0 +1,65 @@
+{
+  "version": "1.0.0",
+  "author": "Arpit Nath",
+  "description": "SUPER CLAUDE - Persistent Context Memory System for Claude Code",
+  "components": {
+    "hooks": [
+      "check-refresh-needed.sh",
+      "detect-changes.sh",
+      "init-capsule-session.sh",
+      "inject-capsule.sh",
+      "load-from-journal.sh",
+      "log-discovery.sh",
+      "log-file-access.sh",
+      "log-subagent.sh",
+      "log-task.sh",
+      "persist-capsule.sh",
+      "pre-task-analysis.sh",
+      "quality-check.sh",
+      "restore-capsule.sh",
+      "session-start.sh",
+      "suggest-discoveries.sh",
+      "summarize-session.sh",
+      "sync-to-journal.sh",
+      "sync-todowrite.sh",
+      "update-capsule.sh",
+      "validate-capsule-usage.sh"
+    ],
+    "scripts": [
+      "show-stats.sh",
+      "test-super-claude.sh"
+    ],
+    "skills": [
+      "context-saver",
+      "exploration-continue",
+      "task-router"
+    ],
+    "agents": [
+      "agent-developer.md",
+      "architecture-explorer.md",
+      "database-navigator.md",
+      "github-issue-tracker.md"
+    ],
+    "docs": [
+      "CAPSULE_USAGE_GUIDE.md",
+      "SUPER_CLAUDE_SYSTEM_ARCHITECTURE.md"
+    ],
+    "templates": [
+      "CLAUDE_TEMPLATE.md"
+    ]
+  },
+  "gitignore_entries": [
+    "# SUPER CLAUDE session files (generated at runtime)",
+    ".claude/capsule.toon",
+    ".claude/capsule_persist.json",
+    ".claude/capsule.hash",
+    ".claude/last_refresh_state.txt",
+    ".claude/last_snapshot.txt",
+    ".claude/message_count.txt",
+    ".claude/session_start.txt",
+    ".claude/session_files.log",
+    ".claude/current_tasks.log",
+    ".claude/subagent_results.log",
+    ".claude/session_discoveries.log"
+  ]
+}
