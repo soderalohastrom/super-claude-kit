@@ -3,19 +3,13 @@
 **Transform Claude Code from a stateless tourist into a stateful resident.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Bash](https://img.shields.io/badge/Bash-4.0+-green.svg)](https://www.gnu.org/software/bash/)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Compatible-blue.svg)](https://claude.ai)
 
 ---
 
 ## The Problem
 
-Claude Code is brilliant, but it's **stateless**. Every session starts from scratch:
-
-- ❌ Forgets what files you read 2 minutes ago
-- ❌ Loses task context between messages
-- ❌ No memory across sessions
-- ❌ Repeats the same questions
+Claude Code is brilliant, but it's **stateless**. Every session starts from scratch.
 
 You're the tour guide, and Claude is the tourist who keeps asking for directions to the same place.
 
@@ -93,14 +87,7 @@ Previous session: 15m on branch main
    🏗️ [architecture] Auth service uses middleware pattern
 ```
 
-### ⚡ Performance
 
-| Metric | Improvement |
-|--------|-------------|
-| Token usage | **52% reduction** (TOON vs JSON) |
-| Context refreshes | **60-70% fewer** (smart heuristics) |
-| File re-reads | **87% reduction** |
-| Cross-session context | **24-hour persistence** |
 
 ### 🤖 Specialized Sub-Agents
 
@@ -207,181 +194,6 @@ rm .claude/last_refresh_state.txt
 ./.claude/hooks/update-capsule.sh
 ```
 
----
-
-## Architecture
-
-### System Overview
-
-```
-┌─────────────────────────────────────────┐
-│  Hook Orchestration Layer              │
-│  - session-start.sh                     │
-│  - pre-task-analysis.sh                 │
-└─────────────────┬───────────────────────┘
-                  │
-┌─────────────────▼───────────────────────┐
-│  Context Capsule System                 │
-│  - Smart refresh (check-refresh-needed) │
-│  - State aggregation (update-capsule)   │
-│  - Change detection (detect-changes)    │
-│  - Display logic (inject-capsule)       │
-└─────────────────┬───────────────────────┘
-                  │
-┌─────────────────▼───────────────────────┐
-│  Storage Layer                          │
-│  - TOON files (.toon)                   │
-│  - Session logs (.log)                  │
-│  - Persistence (JSON)                   │
-│  - Exploration journal (Markdown)       │
-└─────────────────────────────────────────┘
-```
-
-### TOON Format
-
-**TOON (Token-Oriented Object Notation)** achieves 52% fewer tokens than JSON:
-
-**JSON (95 tokens):**
-```json
-{
-  "git": {"branch": "main", "head": "a1b2c3d", "dirty": 5},
-  "files": [{"path": "auth.ts", "action": "read", "age": 120}],
-  "tasks": [{"status": "in_progress", "content": "Auth"}]
-}
-```
-
-**TOON (45 tokens):**
-```toon
-GIT{branch,head,dirty}:
- main,a1b2c3d,5
-FILES{path,action,age}:
- auth.ts,read,120
-TASK{status,content}:
- in_progress,Auth
-```
-
-### Hook System
-
-| Hook | Trigger | Purpose |
-|------|---------|---------|
-| `session-start.sh` | Session init | Load context, restore state |
-| `pre-task-analysis.sh` | Before each prompt | Update capsule, inject context |
-
----
-
-## Documentation
-
-- **[Usage Guide](docs/CAPSULE_USAGE_GUIDE.md)** - Best practices for using SUPER CLAUDE
-- **[System Architecture](docs/SUPER_CLAUDE_SYSTEM_ARCHITECTURE.md)** - Complete technical deep dive (46 pages)
-
----
-
-## File Structure
-
-```
-.claude/
-├── hooks/                      # 20 automation hooks
-│   ├── session-start.sh       # Session initialization
-│   ├── pre-task-analysis.sh   # Pre-prompt orchestration
-│   ├── update-capsule.sh      # TOON generation
-│   ├── inject-capsule.sh      # Context display
-│   ├── check-refresh-needed.sh # Smart refresh
-│   ├── detect-changes.sh      # Git diff detection
-│   ├── persist-capsule.sh     # Cross-session save
-│   ├── restore-capsule.sh     # Cross-session restore
-│   ├── sync-to-journal.sh     # Journal sync
-│   ├── load-from-journal.sh   # Journal load
-│   ├── summarize-session.sh   # Session summary
-│   ├── suggest-discoveries.sh # Discovery hints
-│   ├── log-file-access.sh     # File logging
-│   ├── log-task.sh            # Task logging
-│   ├── log-subagent.sh        # Sub-agent logging
-│   ├── log-discovery.sh       # Discovery logging
-│   ├── validate-capsule-usage.sh # Validation warnings
-│   └── init-capsule-session.sh # Session init
-├── scripts/                    # 2 utility scripts
-│   ├── show-stats.sh          # Usage statistics
-│   └── test-super-claude.sh   # Installation tests
-├── skills/                     # 3 universal skills
-│   ├── context-saver/         # Save important context
-│   ├── exploration-continue/  # Continue exploration
-│   └── task-router/           # Route complex tasks
-├── agents/                     # 4 specialized sub-agents
-│   ├── architecture-explorer.md    # Codebase architecture
-│   ├── database-navigator.md       # Database schemas
-│   ├── agent-developer.md          # Agent development
-│   └── github-issue-tracker.md     # Issue management
-├── docs/                       # Documentation
-│   ├── CAPSULE_USAGE_GUIDE.md        # Usage patterns
-│   └── SUPER_CLAUDE_SYSTEM_ARCHITECTURE.md  # Technical details
-├── capsule.toon               # Current state (TOON)
-├── capsule_persist.json       # 24h persistence
-├── session_files.log          # File access log
-├── current_tasks.log          # Task tracking
-├── subagent_results.log       # Sub-agent results
-├── session_discoveries.log    # Session insights
-└── [other session files]
-```
-
----
-
-## Performance Benchmarks
-
-**Token Efficiency:**
-- JSON: 95 tokens
-- TOON: 45 tokens
-- **Reduction: 52%**
-
-**Refresh Rate:**
-- Baseline: 12/12 prompts (100%)
-- Smart refresh: 4/12 prompts (33%)
-- **Reduction: 67%**
-
-**Storage:**
-- Per-session: 10-30KB
-- Persistence: 2-5KB
-- **Total: <50KB**
-
-**Latency:**
-- Hook execution: <50ms
-- Capsule generation: ~20ms
-- Capsule injection: ~10ms
-- **Total overhead: <80ms**
-
----
-
-## How It Works
-
-### Session Initialization Flow
-
-```
-Claude Code Starts
-    ↓
-session-start.sh
-    ├─> persist-capsule.sh (save previous session)
-    ├─> init-capsule-session.sh (start new session)
-    ├─> restore-capsule.sh (restore if <24h)
-    ├─> load-from-journal.sh (show recent discoveries)
-    └─> update-capsule.sh (generate initial capsule)
-    ↓
-SUPER CLAUDE Activated
-```
-
-### Pre-Prompt Flow
-
-```
-User Submits Prompt
-    ↓
-pre-task-analysis.sh
-    ├─> Increment message counter
-    ├─> check-refresh-needed.sh (hash-based)
-    │   └─> Skip if unchanged + <5 min
-    ├─> detect-changes.sh (git diff)
-    ├─> update-capsule.sh (aggregate state)
-    └─> inject-capsule.sh (display if changed)
-    ↓
-Claude Processes with Full Context
-```
 
 ---
 
@@ -433,21 +245,6 @@ Session logs clear on new session start. If needed:
 
 Contributions welcome! Areas for improvement:
 
-1. **Phase 4 Features:**
-   - Automatic discovery extraction
-   - Journal archival system
-   - Cross-session analytics
-   - Capsule visualizations
-
-2. **Platform Support:**
-   - Windows support (WSL2 tested)
-   - Alternative shells (zsh, fish)
-
-3. **Integration:**
-   - VS Code extension
-   - Cursor IDE support
-   - Other AI coding assistants
-
 **To contribute:**
 1. Fork the repo
 2. Create a feature branch
@@ -463,7 +260,8 @@ MIT License - See [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
-- **Anthropic** - For Claude and Claude Code
+- **[Anthropic](https://www.anthropic.com/)** - For Claude and Claude Code
+- **[TOON](https://github.com/toon-format/toon)** - Token-Oriented Object Notation (TOON) – Compact, human-readable, schema-aware JSON for LLM prompts.
 - **The developer community** - For inspiration and feedback
 - **Early testers** - For bug reports and suggestions
 
@@ -472,16 +270,11 @@ MIT License - See [LICENSE](LICENSE) file
 ## Author
 
 **Arpit Nath**
-
-Builder of AI-powered developer tools. Created SUPER CLAUDE to solve the persistent context problem in AI coding assistants.
-
 - GitHub: [@arpitnath](https://github.com/arpitnath)
-- Twitter/X: [@arpitsharma](https://x.com/arpitsharma)
+- LinkedIn: [@Arpit](https://www.linkedin.com/in/arpit-nath-38280a173/)
 
 ---
 
 **⭐ If SUPER CLAUDE helps you, please star the repo!**
 
 ---
-
-*"The best AI tools aren't the ones with the biggest models. They're the ones with the best architecture."*
