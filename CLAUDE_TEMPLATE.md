@@ -122,7 +122,7 @@ bash .claude/scripts/show-stats.sh
 
 - **Usage Guide**: `.claude/docs/CAPSULE_USAGE_GUIDE.md` (detailed patterns and examples)
 - **System Architecture**: `.claude/docs/SUPER_CLAUDE_SYSTEM_ARCHITECTURE.md`
-- **GitHub**: https://github.com/arpitnath/super-claude
+- **GitHub**: https://github.com/arpitnath/super-claude-kit
 
 ---
 

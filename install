@@ -11,7 +11,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 # Configuration
-GITHUB_REPO="arpitnath/super-claude"
+GITHUB_REPO="arpitnath/super-claude-kit"
 GITHUB_BRANCH="main"
 GITHUB_RAW="https://raw.githubusercontent.com/$GITHUB_REPO/$GITHUB_BRANCH"
 
