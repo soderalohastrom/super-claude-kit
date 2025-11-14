@@ -1,8 +1,11 @@
 {
-  "version": "1.1.0",
+  "version": "2.0.0",
   "author": "Arpit Nath",
-  "description": "Super Claude Kit - Persistent Context Memory System for Claude Code",
+  "description": "Super Claude Kit - Persistent Context Memory + Dependency Graph for Claude Code",
   "components": {
+    "lib": [
+      "tool-runner.sh"
+    ],
     "hooks": [
       "check-refresh-needed.sh",
       "detect-changes.sh",
@@ -33,6 +36,12 @@
       "show-stats.sh",
       "test-super-claude.sh",
       "update-super-claude.sh"
+    ],
+    "tools": [
+      "query-deps",
+      "impact-analysis",
+      "find-circular",
+      "find-dead-code"
     ],
     "skills": [
       "context-saver",
