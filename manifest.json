@@ -4,13 +4,16 @@
   "description": "Super Claude Kit - Persistent Context Memory + Dependency Graph for Claude Code",
   "components": {
     "lib": [
-      "tool-runner.sh"
+      "tool-runner.sh",
+      "sandbox-validator.sh",
+      "audit-logger.sh"
     ],
     "hooks": [
       "check-refresh-needed.sh",
       "detect-changes.sh",
       "init-capsule-session.sh",
       "inject-capsule.sh",
+      "keyword-triggers.sh",
       "load-from-journal.sh",
       "log-discovery.sh",
       "log-file-access.sh",
@@ -18,6 +21,7 @@
       "log-task.sh",
       "persist-capsule.sh",
       "post-tool-use.sh",
+      "pre-edit-analysis.sh",
       "pre-task-analysis.sh",
       "pre-tool-use.sh",
       "quality-check.sh",
@@ -29,6 +33,7 @@
       "summarize-session.sh",
       "sync-to-journal.sh",
       "sync-todowrite.sh",
+      "tool-auto-suggest.sh",
       "update-capsule.sh",
       "validate-capsule-usage.sh"
     ],

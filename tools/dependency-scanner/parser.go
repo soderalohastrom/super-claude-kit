@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	sitter "github.com/smacker/go-tree-sitter"
 	"github.com/smacker/go-tree-sitter/golang"
@@ -141,58 +142,149 @@ func (p *Parser) detectLanguage(filePath string) string {
 func (p *Parser) extractImports(root *sitter.Node, content []byte, lang string) []Import {
 	var imports []Import
 
-	// Query patterns vary by language
-	var queryStr string
 	switch lang {
-	case "typescript", "javascript":
-		queryStr = `
-			(import_statement) @import
-			(import_clause) @import
-		`
+	case "typescript", "javascript", "tsx":
+		imports = p.extractJSImports(root, content)
 	case "go":
-		queryStr = `(import_spec) @import`
+		imports = p.extractGoImports(root, content)
 	case "python":
-		queryStr = `
-			(import_statement) @import
-			(import_from_statement) @import
-		`
-	default:
-		return imports
+		imports = p.extractPythonImports(root, content)
 	}
 
-	// Create query
-	query, err := sitter.NewQuery([]byte(queryStr), p.languages[lang])
-	if err != nil {
-		return imports
-	}
+	return imports
+}
 
-	// Execute query
-	cursor := sitter.NewQueryCursor()
-	cursor.Exec(query, root)
+// extractJSImports extracts JavaScript/TypeScript imports
+func (p *Parser) extractJSImports(root *sitter.Node, content []byte) []Import {
+	// Use manual traversal (more reliable than queries for multiple language variations)
+	return p.traverseJSImports(root, content)
+}
 
-	// Process matches
-	for {
-		match, ok := cursor.NextMatch()
-		if !ok {
-			break
-		}
+// traverseJSImports manually traverses AST for imports (fallback)
+func (p *Parser) traverseJSImports(node *sitter.Node, content []byte) []Import {
+	var imports []Import
 
-		for _, capture := range match.Captures {
-			node := capture.Node
-			text := content[node.StartByte():node.EndByte()]
-			line := int(node.StartPoint().Row) + 1
+	var traverse func(*sitter.Node)
+	traverse = func(n *sitter.Node) {
+		if n.Type() == "import_statement" {
+			// Find string child (the import path)
+			for i := 0; i < int(n.ChildCount()); i++ {
+				child := n.Child(i)
+				if child.Type() == "string" {
+					pathText := content[child.StartByte():child.EndByte()]
+					path := string(pathText)
+					path = strings.Trim(path, "'\"")
 
-			// Parse import text (simplified)
-			imp := Import{
-				Path:      string(text),
-				Symbols:   []string{},
-				IsDefault: false,
-				Line:      line,
+					imports = append(imports, Import{
+						Path:      path,
+						Symbols:   []string{},
+						IsDefault: false,
+						Line:      int(n.StartPoint().Row) + 1,
+					})
+					break
+				}
 			}
-			imports = append(imports, imp)
+		}
+
+		// Recurse to children
+		for i := 0; i < int(n.ChildCount()); i++ {
+			traverse(n.Child(i))
 		}
 	}
 
+	traverse(node)
+	return imports
+}
+
+// extractGoImports extracts Go imports
+func (p *Parser) extractGoImports(root *sitter.Node, content []byte) []Import {
+	var imports []Import
+
+	var traverse func(*sitter.Node)
+	traverse = func(n *sitter.Node) {
+		if n.Type() == "import_spec" {
+			// Get the import path
+			for i := 0; i < int(n.ChildCount()); i++ {
+				child := n.Child(i)
+				if child.Type() == "interpreted_string_literal" || child.Type() == "raw_string_literal" {
+					pathText := content[child.StartByte():child.EndByte()]
+					path := string(pathText)
+					path = strings.Trim(path, "`\"")
+
+					imports = append(imports, Import{
+						Path:      path,
+						Symbols:   []string{},
+						IsDefault: false,
+						Line:      int(n.StartPoint().Row) + 1,
+					})
+					break
+				}
+			}
+		}
+
+		// Recurse to children
+		for i := 0; i < int(n.ChildCount()); i++ {
+			traverse(n.Child(i))
+		}
+	}
+
+	traverse(root)
+	return imports
+}
+
+// extractPythonImports extracts Python imports
+func (p *Parser) extractPythonImports(root *sitter.Node, content []byte) []Import {
+	var imports []Import
+
+	var traverse func(*sitter.Node)
+	traverse = func(n *sitter.Node) {
+		// Handle: import module
+		if n.Type() == "import_statement" {
+			for i := 0; i < int(n.ChildCount()); i++ {
+				child := n.Child(i)
+				if child.Type() == "dotted_name" || child.Type() == "aliased_import" {
+					nameText := content[child.StartByte():child.EndByte()]
+					path := string(nameText)
+
+					imports = append(imports, Import{
+						Path:      path,
+						Symbols:   []string{},
+						IsDefault: false,
+						Line:      int(n.StartPoint().Row) + 1,
+					})
+				}
+			}
+		}
+
+		// Handle: from module import ...
+		if n.Type() == "import_from_statement" {
+			var modulePath string
+			for i := 0; i < int(n.ChildCount()); i++ {
+				child := n.Child(i)
+				if child.Type() == "dotted_name" || child.Type() == "relative_import" {
+					moduleText := content[child.StartByte():child.EndByte()]
+					modulePath = string(moduleText)
+					break
+				}
+			}
+
+			if modulePath != "" {
+				imports = append(imports, Import{
+					Path:      modulePath,
+					Symbols:   []string{},
+					IsDefault: false,
+					Line:      int(n.StartPoint().Row) + 1,
+				})
+			}
+		}
+
+		// Recurse to children
+		for i := 0; i < int(n.ChildCount()); i++ {
+			traverse(n.Child(i))
+		}
+	}
+
+	traverse(root)
 	return imports
 }
 

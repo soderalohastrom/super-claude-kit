@@ -150,5 +150,14 @@ if [ "$SUGGESTIONS_MADE" = false ]; then
     fi
 fi
 
+# ============================================
+# TOOL AUTO-SUGGESTION (v2.0)
+# ============================================
+# Suggest relevant Super Claude Kit tools based on prompt analysis
+if [ -f "./.claude/hooks/tool-auto-suggest.sh" ]; then
+    ./.claude/hooks/tool-auto-suggest.sh "$USER_PROMPT" 2>/dev/null || true
+fi
+# ============================================
+
 # Always continue processing (don't block)
 exit 0
