@@ -1,0 +1,49 @@
+{
+  "name": "dependency-scanner",
+  "version": "2.0.0",
+  "description": "Multi-language dependency graph analyzer with circular dependency detection",
+  "type": "binary",
+  "entry": "bin/dependency-scanner",
+  "languages": ["typescript", "javascript", "go", "python"],
+  "author": "Arpit Nath",
+  "keywords": ["dependencies", "imports", "circular", "dead-code", "tree-sitter"],
+  "usage": {
+    "command": "dependency-scanner",
+    "flags": {
+      "--path": "Path to scan (default: current directory)",
+      "--output": "Output JSON file path (default: ~/.claude/dep-graph.json)",
+      "--verbose": "Enable verbose output",
+      "--version": "Show version information"
+    },
+    "examples": [
+      {
+        "description": "Scan current directory",
+        "command": "dependency-scanner --path . --output ./deps.json"
+      },
+      {
+        "description": "Scan with verbose output",
+        "command": "dependency-scanner --path /path/to/project --verbose"
+      }
+    ]
+  },
+  "outputs": {
+    "format": "json",
+    "location": "~/.claude/dep-graph.json",
+    "schema": {
+      "Files": "map[string]FileNode",
+      "Circular": "[][]string (cycles)",
+      "DeadCode": "[]string (unused files)",
+      "LastUpdated": "timestamp"
+    }
+  },
+  "permissions": {
+    "read": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.go", "**/*.py"],
+    "write": ["~/.claude/dep-graph.json"],
+    "network": false
+  },
+  "autoRun": {
+    "enabled": true,
+    "triggers": ["session-start"],
+    "condition": "always"
+  }
+}

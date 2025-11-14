@@ -29,7 +29,19 @@ echo "   Branch: $BRANCH"
 git status -sb 2>/dev/null | head -5 || echo "   Not in git repo"
 echo ""
 
-# 2. Detect recent changes (last 24 hours)
+# 2. Build dependency graph (v2.0 feature)
+if [ -f "$HOME/.claude/bin/dependency-scanner" ]; then
+  echo "🔍 Building dependency graph..."
+
+  "$HOME/.claude/bin/dependency-scanner" \
+    --path "$(pwd)" \
+    --output .claude/dep-graph.json \
+    2>&1 | grep -E "^(✅|⚠️|🗑️|⏱️)" || true
+
+  echo ""
+fi
+
+# 3. Detect recent changes (last 24 hours)
 echo "🔄 Recent Changes (last 24h):"
 RECENT_COMMITS=$(git log --oneline --since="24 hours ago" --no-merges 2>/dev/null)
 if [ -n "$RECENT_COMMITS" ]; then
@@ -39,12 +51,12 @@ else
 fi
 echo ""
 
-# 3. Show active branches with context
+# 4. Show active branches with context
 echo "🌿 Active Work:"
 echo "   ✅ On $BRANCH"
 echo ""
 
-# 4. Load Exploration Journal (Super Claude Kit MEMORY)
+# 5. Load Exploration Journal (Super Claude Kit MEMORY)
 if [ -d "docs/exploration" ] && [ "$(ls -A docs/exploration 2>/dev/null)" ]; then
     echo "🧠 Super Claude Kit MEMORY LOADED:"
     echo "   Previous exploration findings available:"
@@ -58,14 +70,14 @@ if [ -d "docs/exploration" ] && [ "$(ls -A docs/exploration 2>/dev/null)" ]; the
     echo ""
 fi
 
-# 5. Show pending TODOs from previous session (if exists)
+# 6. Show pending TODOs from previous session (if exists)
 if [ -f ".claude/session-state.json" ]; then
     echo "📝 Pending Tasks from Last Session:"
     cat .claude/session-state.json 2>/dev/null | python3 -c "import sys, json; data = json.load(sys.stdin); print('\n'.join(['   • ' + task for task in data.get('pendingTasks', [])[:5]]))" 2>/dev/null || echo "   No pending tasks"
     echo ""
 fi
 
-# 6. Quick reference
+# 7. Quick reference
 echo "📖 Quick Reference:"
 if [ -f "CLAUDE.md" ]; then
     echo "   • Project guide: CLAUDE.md"
@@ -74,6 +86,9 @@ if [ -f "README.md" ]; then
     echo "   • Documentation: README.md"
 fi
 echo "   • Super Claude Kit docs: .claude/docs/"
+if [ -f ".claude/dep-graph.json" ]; then
+    echo "   • Dependency tools: .claude/tools/ (query-deps, impact-analysis, find-circular, find-dead-code)"
+fi
 echo ""
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
