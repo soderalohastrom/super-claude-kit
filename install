@@ -10,37 +10,33 @@ echo "🚀 Super Claude Kit Installation"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
-# Configuration
 GITHUB_REPO="arpitnath/super-claude-kit"
-GITHUB_BRANCH="master"
-GITHUB_RAW="https://raw.githubusercontent.com/$GITHUB_REPO/$GITHUB_BRANCH"
+VERSION="${VERSION:-master}"
+GITHUB_RAW="https://raw.githubusercontent.com/$GITHUB_REPO/$VERSION"
 
-# Save current directory (where user wants to install)
 INSTALL_DIR="$(pwd)"
 
-# Get script directory (handle both local execution and piped curl)
-# Temporarily disable -u flag to check BASH_SOURCE safely
 set +u
 if [ -n "${BASH_SOURCE[0]:-}" ]; then
   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 else
-  # Piped from curl, no source file
   SCRIPT_DIR=""
 fi
 set -u
 
-# Detect installation mode
 INSTALL_MODE="remote"
 if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/manifest.json" ] && [ -d "$SCRIPT_DIR/hooks" ]; then
   INSTALL_MODE="local"
   echo "📦 Local installation mode detected"
 else
   echo "🌐 Remote installation mode (downloading from GitHub)"
+  if [ "$VERSION" != "master" ]; then
+    echo "📌 Installing version: $VERSION"
+  fi
 fi
 
 echo ""
 
-# Check if we're in a git repository (recommended)
 if [ ! -d "$INSTALL_DIR/.git" ]; then
   echo "⚠️  Warning: Not in a git repository"
   echo "   Super Claude Kit works best in git repositories"
@@ -53,7 +49,6 @@ if [ ! -d "$INSTALL_DIR/.git" ]; then
   echo ""
 fi
 
-# Create directories
 echo "Creating .claude directories..."
 mkdir -p "$INSTALL_DIR/.claude/hooks"
 mkdir -p "$INSTALL_DIR/.claude/agents"
@@ -65,7 +60,6 @@ mkdir -p "$INSTALL_DIR/.claude/tools"
 echo "✓ Directories created"
 echo ""
 
-# Download or copy manifest
 echo "Loading manifest..."
 if [ "$INSTALL_MODE" = "local" ]; then
   MANIFEST=$(cat "$SCRIPT_DIR/manifest.json")
@@ -75,7 +69,6 @@ fi
 echo "✓ Manifest loaded"
 echo ""
 
-# Helper function to download or copy file
 install_file() {
   local source_path=$1
   local dest_path=$2
@@ -87,7 +80,6 @@ install_file() {
   fi
 }
 
-# Install hooks
 echo "Installing hooks..."
 HOOK_COUNT=0
 for hook in $(echo "$MANIFEST" | python3 -c "import sys, json; [print(h) for h in json.load(sys.stdin)['components']['hooks']]"); do
@@ -98,7 +90,6 @@ done
 echo "✓ Installed $HOOK_COUNT hooks"
 echo ""
 
-# Install lib files
 echo "Installing library files..."
 LIB_COUNT=0
 for lib_file in $(echo "$MANIFEST" | python3 -c "import sys, json; [print(l) for l in json.load(sys.stdin)['components'].get('lib', [])]" 2>/dev/null || echo ""); do
@@ -115,7 +106,6 @@ else
 fi
 echo ""
 
-# Install scripts
 echo "Installing utility scripts..."
 SCRIPT_COUNT=0
 for script in $(echo "$MANIFEST" | python3 -c "import sys, json; [print(s) for s in json.load(sys.stdin)['components']['scripts']]"); do
@@ -126,21 +116,17 @@ done
 echo "✓ Installed $SCRIPT_COUNT utility scripts"
 echo ""
 
-# Install tools (v2.0+)
 echo "Installing dependency tools..."
 TOOL_COUNT=0
 for tool in $(echo "$MANIFEST" | python3 -c "import sys, json; [print(t) for t in json.load(sys.stdin)['components'].get('tools', [])]" 2>/dev/null || echo ""); do
   if [ -n "$tool" ]; then
     mkdir -p "$INSTALL_DIR/.claude/tools/$tool"
 
-    # Copy entire tool directory
     if [ "$INSTALL_MODE" = "local" ]; then
       cp -r "$SCRIPT_DIR/tools/$tool/"* "$INSTALL_DIR/.claude/tools/$tool/"
     else
-      # For remote installation, download tool.json and the main script
       curl -fsSL "$GITHUB_RAW/tools/$tool/tool.json" -o "$INSTALL_DIR/.claude/tools/$tool/tool.json"
 
-      # Get entry point from tool.json
       ENTRY=$(cat "$INSTALL_DIR/.claude/tools/$tool/tool.json" | python3 -c "import sys, json; print(json.load(sys.stdin).get('entry', ''))" 2>/dev/null || echo "")
       if [ -n "$ENTRY" ]; then
         curl -fsSL "$GITHUB_RAW/tools/$tool/$ENTRY" -o "$INSTALL_DIR/.claude/tools/$tool/$ENTRY"
@@ -158,7 +144,6 @@ else
 fi
 echo ""
 
-# Install skills
 echo "Installing skills..."
 SKILL_COUNT=0
 for skill in $(echo "$MANIFEST" | python3 -c "import sys, json; [print(s) for s in json.load(sys.stdin)['components']['skills']]"); do
@@ -169,7 +154,6 @@ done
 echo "✓ Installed $SKILL_COUNT skills"
 echo ""
 
-# Install agents
 echo "Installing sub-agents..."
 AGENT_COUNT=0
 for agent in $(echo "$MANIFEST" | python3 -c "import sys, json; [print(a) for a in json.load(sys.stdin)['components']['agents']]"); do
@@ -179,7 +163,6 @@ done
 echo "✓ Installed $AGENT_COUNT sub-agents"
 echo ""
 
-# Install documentation
 echo "Installing documentation..."
 for doc in $(echo "$MANIFEST" | python3 -c "import sys, json; [print(d) for d in json.load(sys.stdin)['components']['docs']]"); do
   install_file "docs/$doc" ".claude/docs/$doc"
@@ -187,21 +170,17 @@ done
 echo "✓ Documentation installed"
 echo ""
 
-# Install dependency scanner binary (v2.0+)
 echo "Installing dependency scanner binary..."
 mkdir -p "$HOME/.claude/bin"
 
-# Detect platform
 ARCH=$(uname -m)
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 
-# Map architecture
 case "$ARCH" in
   x86_64) ARCH="amd64" ;;
   arm64|aarch64) ARCH="arm64" ;;
 esac
 
-# Map OS
 case "$OS" in
   darwin) OS="darwin" ;;
   linux) OS="linux" ;;
@@ -211,12 +190,10 @@ esac
 BINARY_NAME="dependency-scanner-${OS}-${ARCH}"
 
 if [ "$INSTALL_MODE" = "local" ] && [ -f "$SCRIPT_DIR/tools/dependency-scanner/bin/$BINARY_NAME" ]; then
-  # Local installation: copy binary
   cp "$SCRIPT_DIR/tools/dependency-scanner/bin/$BINARY_NAME" "$HOME/.claude/bin/dependency-scanner"
   chmod +x "$HOME/.claude/bin/dependency-scanner"
   echo "✓ Dependency scanner installed (local)"
 elif [ "$OS" != "unknown" ]; then
-  # Remote installation: download from GitHub releases
   BINARY_URL="https://github.com/arpitnath/super-claude-kit/releases/download/v2.0.0/${BINARY_NAME}"
 
   if curl -fsSL "$BINARY_URL" -o "$HOME/.claude/bin/dependency-scanner" 2>/dev/null; then
@@ -232,7 +209,6 @@ else
 fi
 echo ""
 
-# Create or update settings.local.json
 echo "Configuring Claude Code..."
 if [ ! -f "$INSTALL_DIR/.claude/settings.local.json" ]; then
   cat > "$INSTALL_DIR/.claude/settings.local.json" << 'EOF'
@@ -311,16 +287,13 @@ EOF
 else
   echo "✓ settings.local.json exists, merging hooks..."
 
-  # Smart merge: Add missing hooks without overwriting existing settings
   python3 << 'PYTHON_MERGE'
 import json
 import sys
 
-# Read existing settings
 with open('.claude/settings.local.json', 'r') as f:
     existing = json.load(f)
 
-# Define required hooks from v1.1.0
 required_hooks = {
     "SessionStart": [{
         "matcher": "*",
@@ -348,11 +321,9 @@ required_hooks = {
     }]
 }
 
-# Ensure hooks object exists
 if 'hooks' not in existing:
     existing['hooks'] = {}
 
-# Merge: Add missing hooks, preserve existing
 merged = False
 for hook_name, hook_config in required_hooks.items():
     if hook_name not in existing['hooks']:
@@ -360,7 +331,6 @@ for hook_name, hook_config in required_hooks.items():
         merged = True
         print(f"  + Added {hook_name} hook")
 
-# Write back merged settings
 with open('.claude/settings.local.json', 'w') as f:
     json.dump(existing, f, indent=2)
 
@@ -372,7 +342,6 @@ PYTHON_MERGE
 fi
 echo ""
 
-# Update .gitignore
 echo "Updating .gitignore..."
 if [ -f "$INSTALL_DIR/.gitignore" ]; then
   if ! grep -q "Super Claude Kit" "$INSTALL_DIR/.gitignore" 2>/dev/null; then
@@ -388,14 +357,12 @@ else
 fi
 echo ""
 
-# Add Super Claude Kit section to CLAUDE.md
 echo "Updating project instructions..."
 if [ -f "$INSTALL_DIR/CLAUDE.md" ]; then
   if ! grep -q "Super Claude Kit Integration" "$INSTALL_DIR/CLAUDE.md" 2>/dev/null; then
     echo "" >> "$INSTALL_DIR/CLAUDE.md"
     echo "---" >> "$INSTALL_DIR/CLAUDE.md"
     echo "" >> "$INSTALL_DIR/CLAUDE.md"
-    # Download template to .claude directory (not /tmp to avoid path issues)
     install_file "CLAUDE_TEMPLATE.md" ".claude/CLAUDE_TEMPLATE.tmp"
     cat "$INSTALL_DIR/.claude/CLAUDE_TEMPLATE.tmp" >> "$INSTALL_DIR/CLAUDE.md"
     rm "$INSTALL_DIR/.claude/CLAUDE_TEMPLATE.tmp"
@@ -409,7 +376,6 @@ else
 fi
 echo ""
 
-# Initialize capsule system
 echo "Initializing capsule system..."
 cd "$INSTALL_DIR"
 bash .claude/hooks/init-capsule-session.sh >/dev/null 2>&1 || true
@@ -422,7 +388,6 @@ else
 fi
 echo ""
 
-# Save version and installation timestamp
 echo "Saving version information..."
 MANIFEST_VERSION=$(echo "$MANIFEST" | python3 -c "import sys, json; print(json.load(sys.stdin)['version'])")
 echo "$MANIFEST_VERSION" > "$INSTALL_DIR/.claude/.super-claude-version"

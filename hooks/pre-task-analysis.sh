@@ -7,9 +7,21 @@ USER_PROMPT=$(timeout 0.1 cat 2>/dev/null || echo "$1")
 MESSAGE_COUNT_FILE=".claude/message_count.txt"
 if [ -f "$MESSAGE_COUNT_FILE" ]; then
   COUNT=$(cat "$MESSAGE_COUNT_FILE")
-  echo $((COUNT + 1)) > "$MESSAGE_COUNT_FILE"
+  NEW_COUNT=$((COUNT + 1))
+  echo $NEW_COUNT > "$MESSAGE_COUNT_FILE"
 else
+  NEW_COUNT=1
   echo "1" > "$MESSAGE_COUNT_FILE"
+fi
+
+# Output JSON with systemMessage on first message BEFORE any plain text
+# (Ensures first character is '{' for proper JSON parsing)
+if [ "$NEW_COUNT" -eq 1 ]; then
+  cat << 'EOF'
+{
+  "systemMessage": "🚀 Super Claude Kit v2.0 Active - Context and tools loaded"
+}
+EOF
 fi
 
 if ./.claude/hooks/check-refresh-needed.sh 2>/dev/null; then
