@@ -7,6 +7,8 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
+source "$ROOT_DIR/lib/toon-parser.sh"
+
 # Colors
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -98,7 +100,7 @@ cd "$TEST_DIR"
 
 # Test 1: Scanner execution
 echo "Testing scanner execution..."
-OUTPUT_FILE="$TEST_DIR/deps.json"
+OUTPUT_FILE="$TEST_DIR/deps.toon"
 if "$SCANNER_BIN" --path "$TEST_DIR" --output "$OUTPUT_FILE" >/dev/null 2>&1; then
     pass "Scanner executes without errors"
 else
@@ -109,26 +111,25 @@ fi
 echo ""
 echo "Testing output file creation..."
 if [[ -f "$OUTPUT_FILE" ]]; then
-    pass "Creates output JSON file"
+    pass "Creates output TOON file"
 else
     fail "Output file creation" "File not found: $OUTPUT_FILE"
 fi
 
-# Test 3: JSON structure validation
+# Test 3: TOON structure validation
 echo ""
-echo "Testing JSON structure..."
-if jq -e '.Files' "$OUTPUT_FILE" >/dev/null 2>&1 && \
-   jq -e '.Circular' "$OUTPUT_FILE" >/dev/null 2>&1 && \
-   jq -e '.DeadCode' "$OUTPUT_FILE" >/dev/null 2>&1; then
-    pass "Output has correct JSON structure"
+echo "Testing TOON structure..."
+if grep -q "^FILE:" "$OUTPUT_FILE" && \
+   grep -q "^META:" "$OUTPUT_FILE"; then
+    pass "Output has correct TOON structure"
 else
-    fail "JSON structure" "Missing required fields"
+    fail "TOON structure" "Missing required fields"
 fi
 
 # Test 4: File detection
 echo ""
 echo "Testing file detection..."
-FILE_COUNT=$(jq '.Files | length' "$OUTPUT_FILE")
+FILE_COUNT=$(toon_count_files "$OUTPUT_FILE")
 if [[ "$FILE_COUNT" -eq 4 ]]; then
     pass "Detects all 4 TypeScript files"
 else
@@ -138,20 +139,24 @@ fi
 # Test 5: Import detection
 echo ""
 echo "Testing import detection..."
-USER_IMPORTS=$(jq -r '.Files | to_entries[] | select(.value.Path | contains("user.ts")) | .value.Imports | length' "$OUTPUT_FILE")
-if [[ "$USER_IMPORTS" -ge 1 ]]; then
-    pass "Detects imports in user.ts"
+USER_FILE=$(toon_list_files "$OUTPUT_FILE" | grep "user.ts" | head -1)
+if [[ -n "$USER_FILE" ]]; then
+    USER_IMPORTS=$(toon_get_imports "$OUTPUT_FILE" "$USER_FILE" | wc -l | tr -d ' ')
+    if [[ "$USER_IMPORTS" -ge 1 ]]; then
+        pass "Detects imports in user.ts"
+    else
+        fail "Import detection" "Expected at least 1 import in user.ts"
+    fi
 else
-    fail "Import detection" "Expected at least 1 import in user.ts"
+    fail "Import detection" "user.ts not found in graph"
 fi
 
 # Test 6: Dead code detection
 echo ""
 echo "Testing dead code detection..."
-DEAD_CODE=$(jq '.DeadCode | length' "$OUTPUT_FILE")
+DEAD_CODE=$(toon_get_deadcode "$OUTPUT_FILE" | wc -l | tr -d ' ')
 if [[ "$DEAD_CODE" -ge 1 ]]; then
-    # Check if isolated.ts is in dead code
-    if jq -e '.DeadCode[] | select(. | contains("isolated.ts"))' "$OUTPUT_FILE" >/dev/null 2>&1; then
+    if toon_get_deadcode "$OUTPUT_FILE" | grep -q "isolated.ts"; then
         pass "Detects dead code (isolated.ts)"
     else
         fail "Dead code detection" "isolated.ts not marked as dead code"
@@ -163,7 +168,7 @@ fi
 # Test 7: Circular dependency detection (should be none)
 echo ""
 echo "Testing circular dependency detection..."
-CIRCULAR=$(jq '.Circular | length' "$OUTPUT_FILE")
+CIRCULAR=$(toon_get_circular "$OUTPUT_FILE" | wc -l | tr -d ' ')
 if [[ "$CIRCULAR" -eq 0 ]]; then
     pass "No false circular dependencies detected"
 else
@@ -184,7 +189,7 @@ export function funcB() { funcA(); }
 EOF
 
 "$SCANNER_BIN" --path "$TEST_DIR" --output "$OUTPUT_FILE" >/dev/null 2>&1
-CIRCULAR=$(jq '.Circular | length' "$OUTPUT_FILE")
+CIRCULAR=$(toon_get_circular "$OUTPUT_FILE" | wc -l | tr -d ' ')
 if [[ "$CIRCULAR" -ge 1 ]]; then
     pass "Detects circular dependencies"
 else

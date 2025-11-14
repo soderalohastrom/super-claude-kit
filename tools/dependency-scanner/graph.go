@@ -2,11 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
+	"strings"
 	"time"
 )
 
-// DependencyGraph represents the complete dependency structure of a codebase
 type DependencyGraph struct {
 	Files       map[string]*FileNode `json:"Files"`
 	Circular    [][]string           `json:"Circular"`
@@ -14,32 +15,28 @@ type DependencyGraph struct {
 	LastUpdated time.Time            `json:"LastUpdated"`
 }
 
-// FileNode represents a single source file and its dependencies
 type FileNode struct {
 	Path       string   `json:"Path"`
 	Language   string   `json:"Language"`
 	Imports    []Import `json:"Imports"`
 	Exports    []Export `json:"Exports"`
-	ImportedBy []string `json:"ImportedBy"` // Files that import this file
+	ImportedBy []string `json:"ImportedBy"`
 }
 
-// Import represents an import statement in a file
 type Import struct {
-	Path      string   `json:"Path"`      // "./auth" or "github.com/user/repo"
-	Symbols   []string `json:"Symbols"`   // ["authenticateUser", "login"]
-	IsDefault bool     `json:"IsDefault"` // true for default imports
-	Line      int      `json:"Line"`      // Line number in source
+	Path      string   `json:"Path"`
+	Symbols   []string `json:"Symbols"`
+	IsDefault bool     `json:"IsDefault"`
+	Line      int      `json:"Line"`
 }
 
-// Export represents an exported symbol from a file
 type Export struct {
-	Name      string `json:"Name"`      // "authenticateUser"
-	Type      string `json:"Type"`      // "function", "class", "const", "interface"
-	IsDefault bool   `json:"IsDefault"` // true for default exports
-	Line      int    `json:"Line"`      // Line number in source
+	Name      string `json:"Name"`
+	Type      string `json:"Type"`
+	IsDefault bool   `json:"IsDefault"`
+	Line      int    `json:"Line"`
 }
 
-// NewDependencyGraph creates a new empty dependency graph
 func NewDependencyGraph() *DependencyGraph {
 	return &DependencyGraph{
 		Files:       make(map[string]*FileNode),
@@ -49,7 +46,6 @@ func NewDependencyGraph() *DependencyGraph {
 	}
 }
 
-// SaveJSON saves the dependency graph to a JSON file
 func (g *DependencyGraph) SaveJSON(outputPath string) error {
 	data, err := json.MarshalIndent(g, "", "  ")
 	if err != nil {
@@ -59,15 +55,78 @@ func (g *DependencyGraph) SaveJSON(outputPath string) error {
 	return os.WriteFile(outputPath, data, 0644)
 }
 
-// PrintStats prints statistics about the dependency graph
+func (g *DependencyGraph) SaveTOON(outputPath string) error {
+	var builder strings.Builder
+
+	for filePath, node := range g.Files {
+		builder.WriteString("FILE:")
+		builder.WriteString(filePath)
+		builder.WriteString("\n")
+
+		builder.WriteString("LANG:")
+		builder.WriteString(node.Language)
+		builder.WriteString("\n")
+
+		builder.WriteString("IMPORTS:")
+		if len(node.Imports) > 0 {
+			imports := make([]string, len(node.Imports))
+			for i, imp := range node.Imports {
+				imports[i] = fmt.Sprintf("%s:%d", imp.Path, imp.Line)
+			}
+			builder.WriteString(strings.Join(imports, ","))
+		}
+		builder.WriteString("\n")
+
+		builder.WriteString("EXPORTS:")
+		if len(node.Exports) > 0 {
+			exports := make([]string, len(node.Exports))
+			for i, exp := range node.Exports {
+				exports[i] = fmt.Sprintf("%s:%s:%d", exp.Name, exp.Type, exp.Line)
+			}
+			builder.WriteString(strings.Join(exports, ","))
+		}
+		builder.WriteString("\n")
+
+		builder.WriteString("IMPORTEDBY:")
+		if len(node.ImportedBy) > 0 {
+			builder.WriteString(strings.Join(node.ImportedBy, ","))
+		}
+		builder.WriteString("\n")
+
+		builder.WriteString("---\n")
+	}
+
+	if len(g.Circular) > 0 {
+		for _, cycle := range g.Circular {
+			builder.WriteString("CIRCULAR:")
+			builder.WriteString(strings.Join(cycle, ">"))
+			builder.WriteString("\n")
+		}
+		builder.WriteString("---\n")
+	}
+
+	if len(g.DeadCode) > 0 {
+		for _, deadFile := range g.DeadCode {
+			builder.WriteString("DEADCODE:")
+			builder.WriteString(deadFile)
+			builder.WriteString("\n")
+		}
+		builder.WriteString("---\n")
+	}
+
+	builder.WriteString("META:lastUpdated=")
+	builder.WriteString(g.LastUpdated.Format(time.RFC3339))
+	builder.WriteString("\n")
+
+	return os.WriteFile(outputPath, []byte(builder.String()), 0644)
+}
+
 func (g *DependencyGraph) PrintStats() {
-	// Language breakdown
 	langCount := make(map[string]int)
 	for _, node := range g.Files {
 		langCount[node.Language]++
 	}
 
-	// Print summary
 	if len(langCount) > 0 {
 		first := true
 		for lang, count := range langCount {

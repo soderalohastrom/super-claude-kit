@@ -160,14 +160,14 @@ func (s *Scanner) isSupportedFile(path string) bool {
 // buildReverseImports populates the ImportedBy field for each file
 func (s *Scanner) buildReverseImports() {
 	for filePath, node := range s.graph.Files {
-		for _, imp := range node.Imports {
-			// Resolve import path to absolute file path
+		for i, imp := range node.Imports {
 			resolvedPath := s.resolveImport(filePath, imp.Path)
 			if resolvedPath == "" {
 				continue
 			}
 
-			// Add to ImportedBy of the imported file
+			node.Imports[i].Path = resolvedPath
+
 			if importedNode, exists := s.graph.Files[resolvedPath]; exists {
 				importedNode.ImportedBy = append(importedNode.ImportedBy, filePath)
 			}

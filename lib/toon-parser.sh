@@ -34,21 +34,21 @@ toon_get_imports() {
     local graph_file="$1"
     local target_file="$2"
 
-    toon_get_file_info "$graph_file" "$target_file" | grep "^IMPORTS:" | cut -d: -f2- | tr ',' '\n' | grep -v '^$'
+    toon_get_file_info "$graph_file" "$target_file" | grep "^IMPORTS:" | cut -d: -f2- | tr ',' '\n' | grep -v '^$' || true
 }
 
 toon_get_exports() {
     local graph_file="$1"
     local target_file="$2"
 
-    toon_get_file_info "$graph_file" "$target_file" | grep "^EXPORTS:" | cut -d: -f2- | tr ',' '\n' | grep -v '^$'
+    toon_get_file_info "$graph_file" "$target_file" | grep "^EXPORTS:" | cut -d: -f2- | tr ',' '\n' | grep -v '^$' || true
 }
 
 toon_get_importers() {
     local graph_file="$1"
     local target_file="$2"
 
-    toon_get_file_info "$graph_file" "$target_file" | grep "^IMPORTEDBY:" | cut -d: -f2- | tr ',' '\n' | grep -v '^$'
+    toon_get_file_info "$graph_file" "$target_file" | grep "^IMPORTEDBY:" | cut -d: -f2- | tr ',' '\n' | grep -v '^$' || true
 }
 
 toon_get_language() {
@@ -89,7 +89,7 @@ toon_get_circular() {
         return 1
     fi
 
-    grep "^CIRCULAR:" "$graph_file" | cut -d: -f2-
+    grep "^CIRCULAR:" "$graph_file" 2>/dev/null | cut -d: -f2- || true
 }
 
 toon_get_deadcode() {
@@ -99,7 +99,7 @@ toon_get_deadcode() {
         return 1
     fi
 
-    grep "^DEADCODE:" "$graph_file" | cut -d: -f2-
+    grep "^DEADCODE:" "$graph_file" 2>/dev/null | cut -d: -f2- || true
 }
 
 toon_count_files() {
@@ -127,7 +127,7 @@ toon_search_files() {
     local graph_file="$1"
     local pattern="$2"
 
-    toon_list_files "$graph_file" | grep "$pattern"
+    toon_list_files "$graph_file" | grep "$pattern" || true
 }
 
 if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
