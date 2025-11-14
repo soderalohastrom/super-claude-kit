@@ -118,10 +118,58 @@ ls -la .claude/*.log
 bash .claude/scripts/show-stats.sh
 ```
 
+## 🛠️ Available Tools
+
+### Progressive Reader
+Read large files progressively in semantic chunks using tree-sitter AST parsing.
+
+```bash
+# Read first chunk of a large file
+progressive-reader --path src/services/auth.service.ts
+
+# List all chunks without content (preview)
+progressive-reader --path large-file.py --list
+
+# Read specific chunk by index
+progressive-reader --path app.js --chunk 2
+
+# Continue from previous read (uses TOON token)
+progressive-reader --continue-file /tmp/continue.toon
+
+# Adjust chunk size
+progressive-reader --path big-file.go --max-tokens 4000
+```
+
+**When to use**:
+- Files > 50KB that would consume too much context
+- Reading sub-agent outputs progressively
+- Large codebase exploration with minimal context usage
+- Managing TPM rate limits
+
+**Supported languages**: TypeScript, JavaScript, Python, Go
+
+### Dependency Analysis Tools
+Tools for analyzing code dependencies (requires dependency graph):
+
+```bash
+# Query dependencies for a file
+.claude/tools/query-deps/query-deps.sh src/auth.ts
+
+# Analyze impact of changes
+.claude/tools/impact-analysis/impact-analysis.sh src/database.ts
+
+# Find circular dependencies
+.claude/tools/find-circular/find-circular.sh
+
+# Find dead code (unused files)
+.claude/tools/find-dead-code/find-dead-code.sh
+```
+
 ## 📚 Full Documentation
 
 - **Usage Guide**: `.claude/docs/CAPSULE_USAGE_GUIDE.md` (detailed patterns and examples)
 - **System Architecture**: `.claude/docs/SUPER_CLAUDE_SYSTEM_ARCHITECTURE.md`
+- **Progressive Reader Architecture**: `__notepad__/progressive-reader-architecture.md`
 - **GitHub**: https://github.com/arpitnath/super-claude-kit
 
 ---
