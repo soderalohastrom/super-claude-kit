@@ -8,7 +8,7 @@ LIB_DIR="$(cd "$SCRIPT_DIR/../../lib" && pwd)"
 
 source "$LIB_DIR/toon-parser.sh"
 
-GRAPH_FILE="${DEP_GRAPH_FILE:-$HOME/.claude/dep-graph.toon}"
+GRAPH_FILE="${DEP_GRAPH_FILE:-.claude/dep-graph.toon}"
 
 if [ $# -ge 1 ]; then
     GRAPH_FILE="$1"
