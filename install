@@ -11,7 +11,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 GITHUB_REPO="arpitnath/super-claude-kit"
-VERSION="${VERSION:-v2.0.2}"
+VERSION="${VERSION:-v1.0.0}"
 GITHUB_RAW="https://raw.githubusercontent.com/$GITHUB_REPO/$VERSION"
 
 INSTALL_DIR="$(pwd)"
@@ -170,43 +170,63 @@ done
 echo "✓ Documentation installed"
 echo ""
 
-echo "Installing dependency scanner binary..."
+echo "Building dependency tools locally..."
 mkdir -p "$HOME/.claude/bin"
 
-ARCH=$(uname -m)
-OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-
-case "$ARCH" in
-  x86_64) ARCH="amd64" ;;
-  arm64|aarch64) ARCH="arm64" ;;
-esac
-
-case "$OS" in
-  darwin) OS="darwin" ;;
-  linux) OS="linux" ;;
-  *) OS="unknown" ;;
-esac
-
-BINARY_NAME="dependency-scanner-${OS}-${ARCH}"
-
-if [ "$INSTALL_MODE" = "local" ] && [ -f "$SCRIPT_DIR/tools/dependency-scanner/bin/$BINARY_NAME" ]; then
-  cp "$SCRIPT_DIR/tools/dependency-scanner/bin/$BINARY_NAME" "$HOME/.claude/bin/dependency-scanner"
-  chmod +x "$HOME/.claude/bin/dependency-scanner"
-  echo "✓ Dependency scanner installed (local)"
-elif [ "$OS" != "unknown" ]; then
-  BINARY_URL="https://raw.githubusercontent.com/arpitnath/super-claude-kit/$VERSION/tools/dependency-scanner/bin/${BINARY_NAME}"
-
-  if curl -fsSL "$BINARY_URL" -o "$HOME/.claude/bin/dependency-scanner" 2>/dev/null; then
-    chmod +x "$HOME/.claude/bin/dependency-scanner"
-    echo "✓ Dependency scanner installed (remote)"
-  else
-    echo "⚠️  Could not download dependency scanner from GitHub"
-    echo "   URL attempted: $BINARY_URL"
-    echo "   Scanner functionality will be skipped"
-  fi
+# Check if Go is installed
+if ! command -v go &> /dev/null; then
+  echo "⚠️  Go not found - dependency tools will not be available"
+  echo "   Install Go from https://go.dev/dl/ to enable:"
+  echo "   • dependency-scanner (analyze code dependencies)"
+  echo "   • progressive-reader (read large files efficiently)"
+  echo ""
+  echo "   The kit will still work without these tools."
+  echo ""
 else
-  echo "⚠️  Unsupported platform: $OS-$ARCH"
-  echo "   Dependency scanner will not be installed"
+  GO_VERSION=$(go version | awk '{print $3}')
+  echo "✓ Found Go: $GO_VERSION"
+  echo ""
+
+  BUILT_TOOLS=0
+
+  # Build dependency-scanner
+  if [ "$INSTALL_MODE" = "local" ] && [ -d "$SCRIPT_DIR/tools/dependency-scanner" ]; then
+    echo "  Building dependency-scanner..."
+    if (cd "$SCRIPT_DIR/tools/dependency-scanner" && go build -o "$HOME/.claude/bin/dependency-scanner" . >/dev/null 2>&1); then
+      chmod +x "$HOME/.claude/bin/dependency-scanner"
+      SCANNER_VERSION=$("$HOME/.claude/bin/dependency-scanner" --version 2>&1 | head -1 || echo "unknown")
+      echo "  ✅ dependency-scanner built: $SCANNER_VERSION"
+      BUILT_TOOLS=$((BUILT_TOOLS + 1))
+    else
+      echo "  ❌ Failed to build dependency-scanner"
+    fi
+  elif [ "$INSTALL_MODE" = "remote" ]; then
+    echo "  ⚠️  dependency-scanner requires local installation (Go source)"
+  fi
+
+  # Build progressive-reader
+  if [ "$INSTALL_MODE" = "local" ] && [ -d "$SCRIPT_DIR/tools/progressive-reader" ]; then
+    echo "  Building progressive-reader..."
+    if (cd "$SCRIPT_DIR/tools/progressive-reader" && go build -o "$HOME/.claude/bin/progressive-reader" cmd/main.go >/dev/null 2>&1); then
+      chmod +x "$HOME/.claude/bin/progressive-reader"
+      READER_VERSION=$("$HOME/.claude/bin/progressive-reader" --version 2>&1 | head -1 || echo "unknown")
+      echo "  ✅ progressive-reader built: $READER_VERSION"
+      BUILT_TOOLS=$((BUILT_TOOLS + 1))
+    else
+      echo "  ❌ Failed to build progressive-reader"
+    fi
+  elif [ "$INSTALL_MODE" = "remote" ]; then
+    echo "  ⚠️  progressive-reader requires local installation (Go source)"
+  fi
+
+  echo ""
+  if [ "$BUILT_TOOLS" -eq 2 ]; then
+    echo "✓ All dependency tools built successfully"
+  elif [ "$BUILT_TOOLS" -gt 0 ]; then
+    echo "⚠️  Some tools built successfully ($BUILT_TOOLS/2)"
+  else
+    echo "❌ Failed to build dependency tools"
+  fi
 fi
 echo ""
 
@@ -408,8 +428,10 @@ if [ "$TOOL_COUNT" -gt 0 ]; then
 fi
 echo "   • $SKILL_COUNT skills"
 echo "   • $AGENT_COUNT sub-agents"
-if [ -f "$HOME/.claude/bin/dependency-scanner" ]; then
-  echo "   • Dependency scanner binary"
+if [ -f "$HOME/.claude/bin/dependency-scanner" ] && [ -f "$HOME/.claude/bin/progressive-reader" ]; then
+  echo "   • Built tools: dependency-scanner, progressive-reader"
+elif [ -f "$HOME/.claude/bin/dependency-scanner" ] || [ -f "$HOME/.claude/bin/progressive-reader" ]; then
+  echo "   • Some built tools (Go tools partially built)"
 fi
 echo "   • Documentation & templates"
 echo ""

@@ -20,3 +20,6 @@ scatch.pad.txt
 # Backup files
 *.bak
 *.backup
+
+# Tool binaries (built locally by users)
+tools/*/bin/

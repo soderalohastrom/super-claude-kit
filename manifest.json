@@ -1,5 +1,5 @@
 {
-  "version": "2.0.2",
+  "version": "1.0.0",
   "author": "Arpit Nath",
   "description": "Super Claude Kit - Persistent Context Memory + Dependency Graph for Claude Code",
   "components": {
@@ -48,7 +48,9 @@
       "impact-analysis",
       "find-circular",
       "find-dead-code",
-      "progressive-reader-wrapper"
+      "progressive-reader-wrapper",
+      "dependency-scanner",
+      "progressive-reader"
     ],
     "skills": [
       "context-saver",

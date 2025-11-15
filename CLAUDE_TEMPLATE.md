@@ -2,6 +2,17 @@
 
 This project uses **Super Claude Kit** - a persistent context memory system for Claude Code that enables cross-message and cross-session memory.
 
+## 📋 Requirements
+
+- **Git**: Required for capsule and session tracking
+- **Python 3**: Required for manifest parsing and hooks
+- **Go 1.20+**: Required for building dependency tools (optional but recommended)
+  - `dependency-scanner`: Analyze code dependencies and relationships
+  - `progressive-reader`: Read large files efficiently with tree-sitter parsing
+  - Install from: https://go.dev/dl/
+
+**Note**: The kit works without Go, but dependency analysis tools will not be available.
+
 ## 🎯 System Overview
 
 Super Claude Kit provides:
