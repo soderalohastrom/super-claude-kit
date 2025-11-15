@@ -24,7 +24,7 @@ if [ -z "${VERSION:-}" ]; then
 
   if [ -z "$VERSION" ]; then
     # Final fallback: Use known stable version
-    VERSION="v2.0.0"
+    VERSION="v2.0.1"
     echo "⚠️  Could not auto-detect version, using fallback: $VERSION"
   else
     echo "✓ Detected latest version: $VERSION"
