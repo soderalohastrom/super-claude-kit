@@ -45,7 +45,8 @@ fi
 
 if [ ${#SUGGESTIONS[@]} -gt 0 ]; then
     echo ""
-    echo "<suggested-tools source=\"super-claude-kit\">"
+    echo "<enforcement type=\"super-claude-kit-tools\">"
+    echo "  <required>true</required>"
 
     SEEN_TOOLS=""
     for suggestion in "${SUGGESTIONS[@]}"; do
@@ -60,7 +61,7 @@ if [ ${#SUGGESTIONS[@]} -gt 0 ]; then
 
     echo ""
     echo "  <usage>bash ./.claude/lib/tool-runner.sh &lt;tool-name&gt; [args]</usage>"
-    echo "</suggested-tools>"
+    echo "</enforcement>"
     echo ""
 fi
 

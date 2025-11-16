@@ -111,10 +111,11 @@ fi
 if echo "$USER_PROMPT" | grep -qiE "implement|build|create|fix.*bug|add.*feature"; then
     cat << 'EOF'
 
-<reminder type="task-tracking">
+<enforcement type="task-tracking">
+  <required>true</required>
   <tool>TodoWrite</tool>
-  <suggestion>Break complex work into trackable steps</suggestion>
-</reminder>
+  <instruction>Break complex work into trackable steps</instruction>
+</enforcement>
 
 EOF
     SUGGESTIONS_MADE=true
