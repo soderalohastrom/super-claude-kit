@@ -97,117 +97,168 @@ BEFORE asking about current task → Check capsule (Current Tasks)
 6. Complete task → Mark as completed
 ```
 
-## 🚦 Hooks (Automatic)
+## ⚡ Tool Enforcement Rules
 
-These run automatically via `.claude/settings.local.json`:
+<tool-enforcement-rules priority="critical">
+  <description>
+    Super Claude Kit provides specialized tools that are FASTER and MORE ACCURATE than generic exploration.
+    These rules are MANDATORY and enforced by PreToolUse hook.
+  </description>
 
-- **SessionStart**: `session-start.sh` → Initialize capsule, restore previous session
-- **UserPromptSubmit**: `pre-task-analysis.sh` → Update capsule with latest changes
+  <dependency-analysis category="always-use">
+    <query type="what imports this file">
+      <command>bash .claude/tools/query-deps/query-deps.sh &lt;file-path&gt;</command>
+      <use-case>Finding files that import/depend on a specific file</use-case>
+    </query>
 
-## 📊 Verification
+    <query type="who uses this function">
+      <command>bash .claude/tools/query-deps/query-deps.sh &lt;file-path&gt;</command>
+      <use-case>Checking if a function/export is used before deleting</use-case>
+    </query>
 
-Check if Super Claude Kit is working:
+    <query type="what depends on X">
+      <command>bash .claude/tools/query-deps/query-deps.sh &lt;file-path&gt;</command>
+      <use-case>Understanding dependency relationships</use-case>
+    </query>
 
-```bash
-# View current stats
-bash .claude/scripts/show-stats.sh
+    <query type="what would break if I change X">
+      <command>bash .claude/tools/impact-analysis/impact-analysis.sh &lt;file-path&gt;</command>
+      <use-case>Impact analysis before refactoring</use-case>
+      <returns>Direct dependents, transitive dependents, risk assessment</returns>
+    </query>
 
-# Test installation
-bash .claude/scripts/test-super-claude.sh
+    <query type="circular dependencies">
+      <command>bash .claude/tools/find-circular/find-circular.sh</command>
+      <use-case>Finding import cycles</use-case>
+      <returns>All circular dependency chains with fix suggestions</returns>
+    </query>
 
-# Check logs
-ls -la .claude/*.log
-```
+    <query type="dead code">
+      <command>bash .claude/tools/find-dead-code/find-dead-code.sh</command>
+      <use-case>Finding unused/unreferenced files</use-case>
+      <returns>List of potentially unused files</returns>
+    </query>
 
-## 💡 Best Practices
+    <never-use tool="Task" subagent="Explore" reason="inefficient-and-incomplete">
+      <reason priority="high">Slower - must read and parse files sequentially</reason>
+      <reason priority="high">Incomplete - may miss indirect dependencies</reason>
+      <reason priority="high">Expensive - high token usage for simple queries</reason>
+      <reason priority="critical">Cannot detect circular dependencies</reason>
+    </never-use>
+  </dependency-analysis>
 
-### DO ✅
-- Check capsule before redundant file reads
-- Log after every Read/Edit/Write operation
-- Capture sub-agent findings immediately
-- Note architectural discoveries as you learn
-- Reference capsule context in responses
+  <file-search category="always-use">
+    <tool name="Glob" reason="direct-file-matching">
+      <query type="find file by name">
+        <pattern>**/*auth*</pattern>
+        <use-case>Where is the auth file?</use-case>
+      </query>
 
-### DON'T ❌
-- Ignore the capsule (defeats the purpose!)
-- Re-read files shown in capsule (unless stale)
-- Launch duplicate sub-agents for same task
-- Forget to log important operations
-- Over-log trivial operations
+      <query type="find files by extension">
+        <pattern>**/*.ts</pattern>
+        <use-case>Find all TypeScript files</use-case>
+      </query>
+    </tool>
 
-## 🎓 Quick Reference
+    <never-use tool="Task" subagent="Explore" reason="inefficient">
+      <alternative>Use Glob tool for direct file name/pattern matching</alternative>
+    </never-use>
+  </file-search>
 
-```bash
-# File operations
-./.claude/hooks/log-file-access.sh "<path>" "read|edit|write"
+  <code-search category="always-use">
+    <tool name="Grep" reason="fast-pattern-matching">
+      <query type="find by keyword">
+        <pattern>TODO</pattern>
+        <use-case>Find all TODO comments</use-case>
+      </query>
 
-# Sub-agent results
-./.claude/hooks/log-subagent.sh "<type>" "<summary>"
+      <query type="find definition">
+        <pattern>function X</pattern>
+        <use-case>Where is function X defined?</use-case>
+      </query>
+    </tool>
 
-# Discoveries
-./.claude/hooks/log-discovery.sh "<category>" "<content>"
+    <never-use tool="Task" subagent="Explore" reason="inefficient">
+      <alternative>Use Grep tool for code pattern searches</alternative>
+    </never-use>
+  </code-search>
 
-# Tasks
-./.claude/hooks/log-task.sh "<status>" "<description>"
+  <task-tool-allowed-uses>
+    <allowed priority="high">
+      <use-case>Complex architectural questions requiring analysis</use-case>
+      <example>How does the authentication system work?</example>
+    </allowed>
 
-# View stats
-bash .claude/scripts/show-stats.sh
-```
+    <allowed priority="high">
+      <use-case>Implementation understanding</use-case>
+      <example>How does X work internally?</example>
+    </allowed>
 
-## 🛠️ Available Tools
+    <allowed priority="medium">
+      <use-case>Multi-file refactoring planning</use-case>
+      <example>Plan refactoring of auth module across files</example>
+    </allowed>
 
-### Progressive Reader
-Read large files progressively in semantic chunks using tree-sitter AST parsing.
+    <allowed priority="medium">
+      <use-case>Design pattern identification</use-case>
+      <example>What patterns are used in this codebase?</example>
+    </allowed>
 
-```bash
-# Read first chunk of a large file
-progressive-reader --path src/services/auth.service.ts
+    <not-allowed>
+      <forbidden>Dependency lookups - use query-deps instead</forbidden>
+      <forbidden>File searches - use Glob instead</forbidden>
+      <forbidden>Code searches - use Grep instead</forbidden>
+    </not-allowed>
+  </task-tool-allowed-uses>
 
-# List all chunks without content (preview)
-progressive-reader --path large-file.py --list
+  <enforcement-mechanism>
+    <hook name="PreToolUse" action="intercept-and-warn">
+      PreToolUse hook intercepts Task tool calls for dependency queries and displays enforcement warnings.
+      HEED THESE WARNINGS - they indicate you are using the wrong tool.
+    </hook>
 
-# Read specific chunk by index
-progressive-reader --path app.js --chunk 2
+    <required>true</required>
+    <bypass>not-allowed</bypass>
+  </enforcement-mechanism>
+</tool-enforcement-rules>
 
-# Continue from previous read (uses TOON token)
-progressive-reader --continue-file /tmp/continue.toon
+## Best Practices
 
-# Adjust chunk size
-progressive-reader --path big-file.go --max-tokens 4000
-```
+<best-practices priority="critical">
+  <required-behaviors>
+    <behavior priority="high">Check capsule before redundant file reads</behavior>
+    <behavior priority="medium">Capture sub-agent findings immediately</behavior>
+    <behavior priority="medium">Note architectural discoveries as you learn</behavior>
+    <behavior priority="high">Reference capsule context in responses</behavior>
+  </required-behaviors>
 
-**When to use**:
-- Files > 50KB that would consume too much context
-- Reading sub-agent outputs progressively
-- Large codebase exploration with minimal context usage
-- Managing TPM rate limits
+  <forbidden-behaviors>
+    <forbidden priority="critical">Ignore the capsule (defeats the purpose!)</forbidden>
+    <forbidden priority="high">Re-read files shown in capsule (unless stale)</forbidden>
+    <forbidden priority="medium">Launch duplicate sub-agents for same task</forbidden>
+  </forbidden-behaviors>
+</best-practices>
 
-**Supported languages**: TypeScript, JavaScript, Python, Go
+## Available Dependency Tools
 
-### Dependency Analysis Tools
-Tools for analyzing code dependencies (requires dependency graph):
+<dependency-tools>
+  <tool name="query-deps">
+    <command>./.claude/tools/query-deps.sh &lt;file-path&gt;</command>
+    <when-to-use>Before deleting files, understanding dependencies</when-to-use>
+  </tool>
 
-```bash
-# Query dependencies for a file
-.claude/tools/query-deps/query-deps.sh src/auth.ts
+  <tool name="impact-analysis">
+    <command>./.claude/tools/impact-analysis.sh &lt;file-path&gt;</command>
+    <when-to-use>Before refactoring, assessing change risk</when-to-use>
+  </tool>
 
-# Analyze impact of changes
-.claude/tools/impact-analysis/impact-analysis.sh src/database.ts
+  <tool name="find-circular">
+    <command>./.claude/tools/find-circular.sh</command>
+    <when-to-use>Debugging import failures, finding cycles</when-to-use>
+  </tool>
 
-# Find circular dependencies
-.claude/tools/find-circular/find-circular.sh
-
-# Find dead code (unused files)
-.claude/tools/find-dead-code/find-dead-code.sh
-```
-
-## 📚 Full Documentation
-
-- **Usage Guide**: `.claude/docs/CAPSULE_USAGE_GUIDE.md` (detailed patterns and examples)
-- **System Architecture**: `.claude/docs/SUPER_CLAUDE_SYSTEM_ARCHITECTURE.md`
-- **Progressive Reader Architecture**: `__notepad__/progressive-reader-architecture.md`
-- **GitHub**: https://github.com/arpitnath/super-claude-kit
-
----
-
-**Remember**: The capsule is your external memory. Trust it, use it, maintain it!
+  <tool name="find-dead-code">
+    <command>./.claude/tools/find-dead-code.sh</command>
+    <when-to-use>Code cleanup, finding unused files</when-to-use>
+  </tool>
+</dependency-tools>

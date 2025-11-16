@@ -45,8 +45,8 @@ fi
 
 if [ ${#SUGGESTIONS[@]} -gt 0 ]; then
     echo ""
-    echo "Super Claude Kit - Suggested Tools:"
-    echo ""
+    echo "<enforcement type=\"super-claude-kit-tools\">"
+    echo "  <required>true</required>"
 
     SEEN_TOOLS=""
     for suggestion in "${SUGGESTIONS[@]}"; do
@@ -55,14 +55,13 @@ if [ ${#SUGGESTIONS[@]} -gt 0 ]; then
 
         if ! echo "$SEEN_TOOLS" | grep -q "^${TOOL_NAME}$"; then
             SEEN_TOOLS="${SEEN_TOOLS}${TOOL_NAME}"$'\n'
-            echo "   $TOOL_NAME"
-            echo "      $TOOL_DESC"
-            echo ""
+            echo "  <tool name=\"$TOOL_NAME\">$TOOL_DESC</tool>"
         fi
     done
 
-    echo "   Usage: bash ./.claude/lib/tool-runner.sh <tool-name> [args]"
-    echo "   Or call: run_tool <tool-name> [args]"
+    echo ""
+    echo "  <usage>bash ./.claude/lib/tool-runner.sh &lt;tool-name&gt; [args]</usage>"
+    echo "</enforcement>"
     echo ""
 fi
 

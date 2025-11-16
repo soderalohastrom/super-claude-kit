@@ -106,195 +106,168 @@ Only needed if PostToolUse hook is disabled:
 **Auto-logging coverage: ~95%**
 Only discoveries require manual logging - everything else is automatic!
 
-## 🚦 Hooks (Automatic)
+## ⚡ Tool Enforcement Rules
 
-These run automatically via `.claude/settings.local.json`:
+<tool-enforcement-rules priority="critical">
+  <description>
+    Super Claude Kit provides specialized tools that are FASTER and MORE ACCURATE than generic exploration.
+    These rules are MANDATORY and enforced by PreToolUse hook.
+  </description>
 
-- **SessionStart**: `session-start.sh` → Initialize capsule, restore previous session
-- **UserPromptSubmit**: `pre-task-analysis.sh` → Update capsule with latest changes
+  <dependency-analysis category="always-use">
+    <query type="what imports this file">
+      <command>bash .claude/tools/query-deps/query-deps.sh &lt;file-path&gt;</command>
+      <use-case>Finding files that import/depend on a specific file</use-case>
+    </query>
 
-## 📊 Verification
+    <query type="who uses this function">
+      <command>bash .claude/tools/query-deps/query-deps.sh &lt;file-path&gt;</command>
+      <use-case>Checking if a function/export is used before deleting</use-case>
+    </query>
 
-Check if Super Claude Kit is working:
+    <query type="what depends on X">
+      <command>bash .claude/tools/query-deps/query-deps.sh &lt;file-path&gt;</command>
+      <use-case>Understanding dependency relationships</use-case>
+    </query>
 
-```bash
-# View current stats
-bash .claude/scripts/show-stats.sh
+    <query type="what would break if I change X">
+      <command>bash .claude/tools/impact-analysis/impact-analysis.sh &lt;file-path&gt;</command>
+      <use-case>Impact analysis before refactoring</use-case>
+      <returns>Direct dependents, transitive dependents, risk assessment</returns>
+    </query>
 
-# Test installation
-bash .claude/scripts/test-super-claude.sh
+    <query type="circular dependencies">
+      <command>bash .claude/tools/find-circular/find-circular.sh</command>
+      <use-case>Finding import cycles</use-case>
+      <returns>All circular dependency chains with fix suggestions</returns>
+    </query>
 
-# Check logs
-ls -la .claude/*.log
-```
+    <query type="dead code">
+      <command>bash .claude/tools/find-dead-code/find-dead-code.sh</command>
+      <use-case>Finding unused/unreferenced files</use-case>
+      <returns>List of potentially unused files</returns>
+    </query>
 
-## 💡 Best Practices
+    <never-use tool="Task" subagent="Explore" reason="inefficient-and-incomplete">
+      <reason priority="high">Slower - must read and parse files sequentially</reason>
+      <reason priority="high">Incomplete - may miss indirect dependencies</reason>
+      <reason priority="high">Expensive - high token usage for simple queries</reason>
+      <reason priority="critical">Cannot detect circular dependencies</reason>
+    </never-use>
+  </dependency-analysis>
 
-### DO ✅
-- Check capsule before redundant file reads
-- Log after every Read/Edit/Write operation
-- Capture sub-agent findings immediately
-- Note architectural discoveries as you learn
-- Reference capsule context in responses
+  <file-search category="always-use">
+    <tool name="Glob" reason="direct-file-matching">
+      <query type="find file by name">
+        <pattern>**/*auth*</pattern>
+        <use-case>Where is the auth file?</use-case>
+      </query>
 
-### DON'T ❌
-- Ignore the capsule (defeats the purpose!)
-- Re-read files shown in capsule (unless stale)
-- Launch duplicate sub-agents for same task
-- Forget to log important operations
-- Over-log trivial operations
+      <query type="find files by extension">
+        <pattern>**/*.ts</pattern>
+        <use-case>Find all TypeScript files</use-case>
+      </query>
+    </tool>
 
-## 🎓 Quick Reference
+    <never-use tool="Task" subagent="Explore" reason="inefficient">
+      <alternative>Use Glob tool for direct file name/pattern matching</alternative>
+    </never-use>
+  </file-search>
 
-```bash
-# File operations
-./.claude/hooks/log-file-access.sh "<path>" "read|edit|write"
+  <code-search category="always-use">
+    <tool name="Grep" reason="fast-pattern-matching">
+      <query type="find by keyword">
+        <pattern>TODO</pattern>
+        <use-case>Find all TODO comments</use-case>
+      </query>
 
-# Sub-agent results
-./.claude/hooks/log-subagent.sh "<type>" "<summary>"
+      <query type="find definition">
+        <pattern>function X</pattern>
+        <use-case>Where is function X defined?</use-case>
+      </query>
+    </tool>
 
-# Discoveries
-./.claude/hooks/log-discovery.sh "<category>" "<content>"
+    <never-use tool="Task" subagent="Explore" reason="inefficient">
+      <alternative>Use Grep tool for code pattern searches</alternative>
+    </never-use>
+  </code-search>
 
-# Tasks
-./.claude/hooks/log-task.sh "<status>" "<description>"
+  <task-tool-allowed-uses>
+    <allowed priority="high">
+      <use-case>Complex architectural questions requiring analysis</use-case>
+      <example>How does the authentication system work?</example>
+    </allowed>
 
-# View stats
-bash .claude/scripts/show-stats.sh
-```
+    <allowed priority="high">
+      <use-case>Implementation understanding</use-case>
+      <example>How does X work internally?</example>
+    </allowed>
 
-## 📚 Full Documentation
+    <allowed priority="medium">
+      <use-case>Multi-file refactoring planning</use-case>
+      <example>Plan refactoring of auth module across files</example>
+    </allowed>
 
-- **Usage Guide**: `.claude/docs/CAPSULE_USAGE_GUIDE.md` (detailed patterns and examples)
-- **System Architecture**: `.claude/docs/SUPER_CLAUDE_SYSTEM_ARCHITECTURE.md`
-- **GitHub**: https://github.com/arpitnath/super-claude-kit
+    <allowed priority="medium">
+      <use-case>Design pattern identification</use-case>
+      <example>What patterns are used in this codebase?</example>
+    </allowed>
 
----
+    <not-allowed>
+      <forbidden>Dependency lookups - use query-deps instead</forbidden>
+      <forbidden>File searches - use Glob instead</forbidden>
+      <forbidden>Code searches - use Grep instead</forbidden>
+    </not-allowed>
+  </task-tool-allowed-uses>
 
-## 🔍 Dependency Graph (NEW in v2.0)
+  <enforcement-mechanism>
+    <hook name="PreToolUse" action="intercept-and-warn">
+      PreToolUse hook intercepts Task tool calls for dependency queries and displays enforcement warnings.
+      READ THESE WARNINGS - they indicate you are using the wrong tool.
+    </hook>
 
-Super Claude Kit now understands your codebase structure through dependency analysis!
+    <required>true</required>
+    <bypass>not-allowed</bypass>
+  </enforcement-mechanism>
+</tool-enforcement-rules>
 
-### What is it?
+## Best Practices
 
-On session start, a dependency scanner analyzes your codebase and builds a complete graph of:
-- **Imports**: What each file imports
-- **Exports**: What each file exports (functions, classes, types)
-- **Reverse dependencies**: Who imports each file
-- **Circular dependencies**: Import cycles (A → B → C → A)
-- **Dead code**: Files not imported by anyone
+<best-practices priority="critical">
+  <required-behaviors>
+    <behavior priority="high">Check capsule before redundant file reads</behavior>
+    <behavior priority="medium">Capture sub-agent findings immediately</behavior>
+    <behavior priority="medium">Note architectural discoveries as you learn</behavior>
+    <behavior priority="high">Reference capsule context in responses</behavior>
+  </required-behaviors>
 
-### Languages Supported
+  <forbidden-behaviors>
+    <forbidden priority="critical">Ignore the capsule (defeats the purpose!)</forbidden>
+    <forbidden priority="high">Re-read files shown in capsule (unless stale)</forbidden>
+    <forbidden priority="medium">Launch duplicate sub-agents for same task</forbidden>
+  </forbidden-behaviors>
+</best-practices>
 
-- **TypeScript/JavaScript**: `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`
-- **Go**: `.go` files (uses Go's AST parser)
-- **Python**: `.py`, `.pyi` files
+## Available Dependency Tools
 
-### Available Tools
+<dependency-tools>
+  <tool name="query-deps">
+    <command>./.claude/tools/query-deps.sh &lt;file-path&gt;</command>
+    <when-to-use>Before deleting files, understanding dependencies</when-to-use>
+  </tool>
 
-All tools are in `.claude/tools/`:
+  <tool name="impact-analysis">
+    <command>./.claude/tools/impact-analysis.sh &lt;file-path&gt;</command>
+    <when-to-use>Before refactoring, assessing change risk</when-to-use>
+  </tool>
 
-**1. Query Dependencies**
-```bash
-./.claude/tools/query-deps.sh <file-path>
-```
-Shows:
-- Files that import this file
-- Files that this file imports
-- All exported symbols
+  <tool name="find-circular">
+    <command>./.claude/tools/find-circular.sh</command>
+    <when-to-use>Debugging import failures, finding cycles</when-to-use>
+  </tool>
 
-**2. Impact Analysis**
-```bash
-./.claude/tools/impact-analysis.sh <file-path>
-```
-Shows:
-- Direct dependents (files that import this)
-- Transitive dependents (files that depend on dependents)
-- Risk assessment (LOW/MEDIUM/HIGH)
-- Recommendations before making changes
-
-**3. Find Circular Dependencies**
-```bash
-./.claude/tools/find-circular.sh
-```
-Detects import cycles and suggests fixes.
-
-**4. Find Dead Code**
-```bash
-./.claude/tools/find-dead-code.sh
-```
-Lists files not imported by anyone (potential unused code).
-
-### When to Use
-
-**Before Refactoring:**
-```
-User: "Refactor auth.ts"
-Claude: Let me check impact first...
-        [Runs: ./.claude/tools/impact-analysis.sh src/auth.ts]
-        "⚠️ 15 files depend on this. HIGH RISK."
-        "Review all dependents before making breaking changes."
-```
-
-**Before Deleting:**
-```
-User: "Can I delete this file?"
-Claude: [Runs: ./.claude/tools/query-deps.sh src/old-utils.ts]
-        "❌ No! 5 files still import it:"
-        "  • src/api/routes.ts"
-        "  • src/middleware/auth.ts"
-        "  ..."
-```
-
-**Understanding Architecture:**
-```
-User: "Why is this import failing?"
-Claude: [Runs: ./.claude/tools/find-circular.sh]
-        "Found circular dependency:"
-        "  auth.ts → user.ts → session.ts → auth.ts"
-        "💡 Extract shared code to break the cycle."
-```
-
-**Finding Unused Code:**
-```
-User: "Are there any unused files?"
-Claude: [Runs: ./.claude/tools/find-dead-code.sh]
-        "Found 3 potentially unused files:"
-        "  • src/legacy/old-auth.ts"
-        "  • src/utils/unused-helper.ts"
-        "  ..."
-```
-
-### How It Works
-
-1. **SessionStart**: Scanner runs automatically
-   - Parses all source files into AST
-   - Builds dependency graph
-   - Saves to `.claude/dep-graph.toon`
-
-2. **During Session**: Claude uses query tools
-   - Read `.claude/dep-graph.toon`
-   - Run bash scripts to query specific info
-   - Provide insights before making changes
-
-3. **Performance**: Very fast
-   - 100 files: <1 second
-   - 1000 files: <5 seconds
-   - 10000 files: <30 seconds
-
-### Best Practices
-
-**DO ✅**
-- Run impact analysis before major refactors
-- Check dependencies before deleting files
-- Use circular dependency detection when import fails
-- Review dead code findings before cleanup
-
-**DON'T ❌**
-- Ignore impact analysis warnings (HIGH RISK)
-- Delete files without checking query-deps first
-- Assume files are unused without verification
-
----
-
-**Remember**: The capsule is your external memory. Trust it, use it, maintain it!
+  <tool name="find-dead-code">
+    <command>./.claude/tools/find-dead-code.sh</command>
+    <when-to-use>Code cleanup, finding unused files</when-to-use>
+  </tool>
+</dependency-tools>
