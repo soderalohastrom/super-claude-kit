@@ -11,7 +11,26 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 GITHUB_REPO="arpitnath/super-claude-kit"
-VERSION="${VERSION:-v1.1.1}"
+
+# Auto-detect latest version from GitHub API if not specified
+if [ -z "${VERSION:-}" ]; then
+  echo "🔍 Detecting latest version..."
+  VERSION=$(curl -fsSL "https://api.github.com/repos/$GITHUB_REPO/releases/latest" 2>/dev/null | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/' || echo "")
+
+  # Fallback to tags API if releases API fails
+  if [ -z "$VERSION" ]; then
+    VERSION=$(curl -fsSL "https://api.github.com/repos/$GITHUB_REPO/tags" 2>/dev/null | grep '"name"' | head -1 | sed -E 's/.*"([^"]+)".*/\1/' || echo "")
+  fi
+
+  # Final fallback
+  if [ -z "$VERSION" ]; then
+    VERSION="v1.1.2"
+    echo "⚠️  Could not auto-detect version, using fallback: $VERSION"
+  else
+    echo "✓ Detected latest version: $VERSION"
+  fi
+fi
+
 GITHUB_RAW="https://raw.githubusercontent.com/$GITHUB_REPO/$VERSION"
 
 INSTALL_DIR="$(pwd)"
