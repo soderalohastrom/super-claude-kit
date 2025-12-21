@@ -164,12 +164,32 @@ for tool in $(echo "$MANIFEST" | python3 -c "import sys, json; [print(t) for t i
     if [ "$INSTALL_MODE" = "local" ]; then
       cp -r "$SCRIPT_DIR/tools/$tool/"* "$INSTALL_DIR/.claude/tools/$tool/"
     else
+      # Download tool.json
       curl -fsSL "$GITHUB_RAW/tools/$tool/tool.json" -o "$INSTALL_DIR/.claude/tools/$tool/tool.json"
 
+      # Download components (lib/, scripts/, etc.)
+      COMPONENTS=$(cat "$INSTALL_DIR/.claude/tools/$tool/tool.json" | python3 -c "
+import sys, json
+components = json.load(sys.stdin).get('components', {})
+for dir_name, files in components.items():
+    for file in files:
+        print(f'{dir_name}/{file}')
+" 2>/dev/null || echo "")
+
+      for component in $COMPONENTS; do
+        mkdir -p "$INSTALL_DIR/.claude/tools/$tool/$(dirname $component)"
+        curl -fsSL "$GITHUB_RAW/tools/$tool/$component" -o "$INSTALL_DIR/.claude/tools/$tool/$component" 2>/dev/null || true
+        if [[ "$component" == *.sh ]] || [[ "$component" == *.py ]]; then
+          chmod +x "$INSTALL_DIR/.claude/tools/$tool/$component" 2>/dev/null || true
+        fi
+      done
+
+      # Also download entry file if specified and not in components
       ENTRY=$(cat "$INSTALL_DIR/.claude/tools/$tool/tool.json" | python3 -c "import sys, json; print(json.load(sys.stdin).get('entry', ''))" 2>/dev/null || echo "")
       if [ -n "$ENTRY" ]; then
-        curl -fsSL "$GITHUB_RAW/tools/$tool/$ENTRY" -o "$INSTALL_DIR/.claude/tools/$tool/$ENTRY"
-        chmod +x "$INSTALL_DIR/.claude/tools/$tool/$ENTRY"
+        mkdir -p "$INSTALL_DIR/.claude/tools/$tool/$(dirname $ENTRY)"
+        curl -fsSL "$GITHUB_RAW/tools/$tool/$ENTRY" -o "$INSTALL_DIR/.claude/tools/$tool/$ENTRY" 2>/dev/null || true
+        chmod +x "$INSTALL_DIR/.claude/tools/$tool/$ENTRY" 2>/dev/null || true
       fi
     fi
 
