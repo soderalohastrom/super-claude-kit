@@ -10,7 +10,7 @@ echo "🚀 Claude Capsule Kit Installation"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
-GITHUB_REPO="arpitnath/super-claude-kit"
+GITHUB_REPO="soderalohastrom/super-claude-kit"
 
 # Auto-detect latest version from GitHub API if not specified
 if [ -z "${VERSION:-}" ]; then

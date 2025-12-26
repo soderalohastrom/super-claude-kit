@@ -1,6 +1,6 @@
 {
-  "version": "2.0.1",
-  "author": "Arpit Nath",
+  "version": "2.1.0",
+  "author": "Arpit Nath (forked by soderalohastrom)",
   "description": "Claude Capsule Kit - Persistent Context Memory + Dependency Graph for Claude Code",
   "components": {
     "lib": [
@@ -68,7 +68,12 @@
       "github-issue-tracker.md"
     ],
     "commands": [
-      "memory-graph.md"
+      "memory-graph.md",
+      "load-session.md",
+      "sessions.md",
+      "sync.md",
+      "sync-enable.md",
+      "sync-disable.md"
     ],
     "docs": [
       "CAPSULE_USAGE_GUIDE.md",
@@ -79,8 +84,11 @@
     ]
   },
   "gitignore_entries": [
-    "# Claude Capsule Kit (generated at runtime)",
-    ".claude/**",
-    "CLAUDE.md"
+    "# Claude Capsule Kit - runtime files only",
+    ".claude/session_*.log",
+    ".claude/capsule.toon",
+    ".claude/capsule.hash",
+    ".claude/*.txt",
+    ".claude/dep-graph.toon"
   ]
 }
